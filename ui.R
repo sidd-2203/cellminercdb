@@ -2,6 +2,9 @@ library(shiny)
 library(rcellminer)
 library(shinycssloaders)
 library(plotly)
+library(markdown)
+library(cyjShiny)
+library(later)
 
 # library(BiocManager)
 # options(repos = BiocManager::repositories())   ## bioconductor 3.8
@@ -34,6 +37,9 @@ if (!is.null(appConfig$appName)){
 dataSourceChoices <- setNames(names(config),
 															vapply(config, function(x) { x[["displayName"]] }, 
 																		 character(1)))
+
+
+
 options = "";
 for(y in 1:length(dataSourceChoices)){
   if (dataSourceChoices[y]=="nci60")
@@ -254,7 +260,7 @@ shinyUI(
 						 	)
 						 ) #end fluidPage
 		), #end tabPane 
-		#-----[NavBar Tab: Metadata]---------------------------------------------------------------------
+		#-----[NavBar Tab: Search ID's]---------------------------------------------------------------------
 		tabPanel("Search IDs",
 		         fluidPage(
 		           sidebarLayout(
@@ -285,6 +291,31 @@ shinyUI(
 		             )
 		           )
 		         ) #end fluidPage
+		), #end tabPane
+		  
+		
+		
+		#-----[NavBar Tab: Analysis by Pathway]---------------------------------------------------------------------
+		tabPanel("Analysis by Pathway",
+		         fluidPage(
+		           tags$head(tags$style("#cyjShiny{height:95vh !important;}")),
+		           titlePanel(title="Analysis by Pathway"),
+		           sidebarLayout(
+		             sidebarPanel(
+		               selectInput("SelectData", "Select Pathway", choices = c("","Citrate cycle")),
+		               selectInput("doLayout", "Select Layout:",
+		                           choices=c("","cose","cola","circle","concentric","breadthfirst","grid","random","fcose","springy")),
+		               
+		               selectInput("selectName", "Select Node by ID:", choices = c("")),
+		               actionButton("sfn", "Select First Neighbor"),
+		               actionButton("fit", "Fit Graph"),
+		               actionButton("fitSelected", "Fit Selected"),
+		               htmlOutput("selectedNodesDisplay"),
+		               width=3
+		             ),
+		             mainPanel(cyjShinyOutput('cyjShiny', height=400),width=9)
+		           ) # sidebarLayout
+		         )
 		), #end tabPane
 		#-----[NavBar Tab: About]------------------------------------------------------------------------
 # 		tabPanel("TCGA distribution",

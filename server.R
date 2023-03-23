@@ -33,6 +33,8 @@ config <- jsonlite::fromJSON("config.json")
 appConfig <- jsonlite::fromJSON("appConfig.json")
 metaConfig <- jsonlite::fromJSON("configMeta.json")
 
+
+
 oncolor <- read.delim("oncotree1_colors.txt",row.names = 1,stringsAsFactors = F)
 rownames(oncolor)=toupper(rownames(oncolor))
 
@@ -48,6 +50,29 @@ source("dataLoadingFunctions.R")
 
 # Construct named character vector mapping displayed data source names to
 # internally used source identifiers.
+
+#----------------------------------------------------------------------------------------------------
+
+#-----------[Changed]-----------------
+
+pathWay<- jsonlite::fromJSON("citrate_cycle_tca_cycle.json")
+
+
+pathwayNodeData<- pathWay[["elements"]][["nodes"]][["data"]]
+pathwayEdge<- pathWay[["elements"]][["edges"]][["data"]]
+tbl.nodes <- data.frame(id=pathwayNodeData[["id"]],
+                        x=pathwayNodeData[["xPos"]],
+                        y=pathwayNodeData[["yPos"]],
+                        stringsAsFactors=FALSE)
+
+tbl.edges <- data.frame(source=pathwayEdge[["source"]],
+                        target=pathwayEdge[["target"]],
+                        interaction=pathwayEdge[["interactionType"]],
+                        stringsAsFactors=FALSE)
+
+graph.json <- dataFramesToJSON(tbl.edges, tbl.nodes)
+#--------------------------------------------------------------------------
+
 dataSourceChoices <- setNames(names(config),
 															vapply(config, function(x) { x[["displayName"]] }, 
 																		 character(1)))
@@ -1660,6 +1685,145 @@ shinyServer(function(input, output, session) {
   #-----[NavBar Tab Server Code]---------------------------------------------------------
   rm <- callModule(regressionModels, "rm", srcContentReactive = srcContentReactive,
   								 appConfig = appConfig, oncolor=oncolor)
+  
+  
+  
+  
+  
+  #------[Analysis by pathway code]-----------------------------
+  
+  
+  observeEvent(input$fit, ignoreInit=TRUE, {
+    fit(session, 80)
+  })
+  
+  observeEvent(input$showCondition, ignoreInit=TRUE, {
+    condition.name <- isolate(input$showCondition)
+    #printf(" condition.name: %s", condition.name)
+    values <- as.numeric(tbl.lfc[condition.name,])
+    node.names <- colnames(tbl.lfc)
+    #printf("sending lfc values for %s: %s", paste(node.names, collapse=", "), paste(values, collapse=", "))
+    setNodeAttributes(session, attributeName="lfc", nodes=node.names, values)
+    values <- as.numeric(tbl.count[condition.name,])
+    node.names <- colnames(tbl.count)
+    #printf("sending count values for %s: %s", paste(node.names, collapse=", "), paste(values, collapse=", "))
+    setNodeAttributes(session, attributeName="count", nodes=colnames(tbl.count), values)
+  })
+  
+  observeEvent(input$loadStyleFile,  ignoreInit=FALSE, {
+    if(input$loadStyleFile != ""){
+      tryCatch({
+        loadStyleFile(input$loadStyleFile)
+      }, error=function(e) {
+        msg <- sprintf("ERROR in stylesheet file '%s': %s", input$loadStyleFile, e$message)
+        showNotification(msg, duration=NULL, type="error")
+      })
+      #later(function() {updateSelectInput(session, "loadStyleFile", selected=character(0))}, 0.5)
+    }
+  })
+  
+  observeEvent(input$doLayout,  ignoreInit=TRUE,{
+    if(input$doLayout != ""){
+      strategy <- input$doLayout
+      doLayout(session, strategy)
+      later(function() {updateSelectInput(session, "doLayout", selected=character(0))}, 1)
+    }
+  })
+  
+  observeEvent(input$selectName,  ignoreInit=TRUE,{
+    selectNodes(session, input$selectName)
+  })
+  
+  observeEvent(input$sfn,  ignoreInit=TRUE,{
+    selectFirstNeighbors(session)
+  })
+  
+  observeEvent(input$fitSelected,  ignoreInit=TRUE,{
+    fitSelected(session, 100)
+  })
+  
+  
+  observeEvent(input$selectedNodes, ignoreInit=TRUE, {
+    printf(" selectedNodes event arrived: %s", paste(input$selectedNodes, collapse=","))
+  })
+  
+  observeEvent(input$testGetSelectedNodesButton, ignoreInit=TRUE, {
+    printf("--- testGetSelectedNodes")
+    # clear selection, sleep, select 2 nodes, get selection
+    clearSelection(session);
+    selectNodes(session, c("Y", "Z"))
+  })
+  
+  observeEvent(input$getSelectedNodes, ignoreInit=TRUE, {
+    output$selectedNodesDisplay <- renderText({" "})
+    getSelectedNodes(session)
+    #newNodes <- nodeSelection()
+    #printf("--- newNodes, not in test: %s", paste(newNodes, collapse=", "))
+  })
+  
+  observeEvent(input$loopConditions, ignoreInit=TRUE, {
+    condition.names <- rownames(tbl.lfc)
+    for(condition.name in condition.names[-1]){
+      lfc.vector <- as.numeric(tbl.lfc[condition.name,])
+      node.names <- rownames(tbl.lfc)
+      setNodeAttributes(session, attributeName="lfc", nodes=node.names, values=lfc.vector)
+      #updateSelectInput(session, "setNodeAttributes", selected=condition.name)
+      Sys.sleep(1)
+    } # for condition.name
+    updateSelectInput(session, "setNodeAttributes", selected="baseline")
+  })
+  
+  #observeEvent(input$removeGraphButton, ignoreInit=TRUE, {
+  # removeGraph(session)
+  #})
+  
+  #observeEvent(input$addRandomGraphFromDataFramesButton, ignoreInit=TRUE, {
+   # source.nodes <-  LETTERS[sample(1:5, 5)]
+    #target.nodes <-  LETTERS[sample(1:5, 5)]
+    #tbl.edges <- data.frame(source=source.nodes,
+     #                       target=target.nodes,
+      #                      interaction=rep("generic", length(source.nodes)),
+       #                     stringsAsFactors=FALSE)
+  #all.nodes <- sort(unique(c(source.nodes, target.nodes, "orphan")))
+   #tbl.nodes <- data.frame(id=all.nodes,
+    #                        type=rep("unspecified", length(all.nodes)),
+     #                       stringsAsFactors=FALSE)
+    #printf("-- about to addGraphFromDataFrame")
+    #print(tbl.edges)
+    #print(tbl.nodes)
+    #addGraphFromDataFrame(session, tbl.edges, tbl.nodes)
+  #})
+  
+  #nodeSelection <- reactive({
+  #   printf(" reactive function nodeSelection invoked")
+  #
+  #   })
+  
+  
+  #observe({
+  #    x <- nodeSelection()
+  #    printf(" at line 172, selected nodes: %s, testMode: %s",
+  #           paste(x, collapse=","),
+  #           nodeSelectionTestMode)
+  #    nodeSelectionTestMode <<- FALSE
+  #    })
+  
+  #observeEvent(input$selectedNodes, {
+  #  communicated here via assignement in cyjShiny.js
+  #     Shiny.setInputValue("selectedNodes", value, {priority: "event"});
+  #newNodes <- input$selectedNodes;
+  #   newNodes <- nodeSelection()
+  #   output$selectedNodesDisplay <- renderText({
+  #     paste(newNodes)
+  #   })
+  # })
+  
+  output$value <- renderPrint({ input$action })
+  output$cyjShiny <- renderCyjShiny({
+    cyjShiny(graph=graph.json, layoutName="preset")
+  })
+  
+  
 
 })
 #-----[end of shinyServer()]-----------------------------------------------------------------------
