@@ -1,9 +1,14 @@
 library(cyjShiny)
 library(later)
-
-
+library(DT)
 
 allData <- srcContent[["nci60"]][["molPharmData"]][["expA"]][["Gene name"]]
+
+
+#tp53_row <- data["expTP53", ]
+#avg <- mean(as.numeric(tp53_row))
+
+
 
 ui = shinyUI(fluidPage(
 
@@ -26,6 +31,9 @@ ui = shinyUI(fluidPage(
       
       actionButton("getSelectedNodes", "Get Selected Nodes"), HTML("<br><br>"),
       htmlOutput("selectedNodesDisplay"),
+      
+      dataTableOutput("table",),
+      
       width=3
     ),
     mainPanel(cyjShinyOutput('cyjShiny', height=400),width=9)
@@ -34,6 +42,8 @@ ui = shinyUI(fluidPage(
 #----------------------------------------------------------------------------------------------------
 server = function(input, output, session)
 {
+  
+  
   observeEvent(input$fit, ignoreInit=TRUE, {
     fit(session, 80)
   })
@@ -86,6 +96,7 @@ server = function(input, output, session)
     if(input$doPathway!=""){
       forNodes<- df_list[[input$doPathway]][[1]]
       forEdges<- df_list[[input$doPathway]][[2]]
+      namesOfNodes <- forNodes[["NodeName"]]
       tbl.nodes <- data.frame(id=forNodes[["NodeName"]],
                               x=forNodes[["PosX"]],
                               y=forNodes[["PosY"]],
@@ -99,8 +110,35 @@ server = function(input, output, session)
       cyjShiny::removeGraph(session)
       cyjShiny::addGraphFromDataFrame(session,tbl.edges,tbl.nodes)
       updateSelectInput(session,"doPathway",selected = input$doPathway)
+      
+      
+      data<-srcContent[["nci60"]][["molPharmData"]][["exp"]]
+      
+      # updating the table also
+      averages <- c()
+      # Loop through each gene name in namesOfNodes
+      for(nodeName in namesOfNodes){
+        # Construct the name of the gene in the "exp" data frame
+        nameIndata <- paste("exp", nodeName, sep = "")
+        if(nameIndata %in% rownames(data)){
+          # Calculate the average value for the gene
+          avg <- mean(as.numeric(data[nameIndata,]))
+          averages <- c(averages, avg)
+        } else {
+          averages <- c(averages, "NA")   
+        }
+      }
+      # Create a data frame with two columns, one for gene name and the other for average value
+      dataFrame <- data.frame(Name = namesOfNodes, Average_Value = averages)
+      # Display the data table using DT package
+      output$table <- renderDataTable({
+        datatable(dataFrame)
+      })
+      
     }
   })
+  
+  
   observeEvent(input$selectName,  ignoreInit=TRUE,{
     selectNodes(session, input$selectName)
   })

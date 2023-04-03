@@ -3,6 +3,7 @@
 library(jsonlite)
 # Read the JSON file
 pathways <- jsonlite::fromJSON("pathways.json")
+
 # Initialize data frame for node and edges fields
 node_df <- data.frame()
 edge_df <- data.frame()
@@ -42,3 +43,6 @@ for (pathway in pathways) {
   
   df_list[[pathway[1]]] <- list(node_df_pathway, edge_df_pathway)
 }
+
+
+

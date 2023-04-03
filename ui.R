@@ -311,6 +311,7 @@ shinyUI(
 		               actionButton("fit", "Fit Graph"),
 		               actionButton("fitSelected", "Fit Selected"),
 		               htmlOutput("selectedNodesDisplay"),
+		               dataTableOutput("table",),
 		               width=3
 		             ),
 		             mainPanel(cyjShinyOutput('cyjShiny', height=400),width=9)
