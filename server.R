@@ -12,7 +12,10 @@ library(shinycssloaders)
 library(gplots)
 library(heatmaply)
 library(memoise)
-
+library(grid)
+library(rstudioapi)
+library(DT)
+library(shinyjs)
 
 ## library(shinyHeatmaply)
 #library(dplyr)
@@ -52,26 +55,6 @@ source("dataLoadingFunctions.R")
 # internally used source identifiers.
 
 #----------------------------------------------------------------------------------------------------
-
-#-----------[Changed]-----------------
-
-pathWay<- jsonlite::fromJSON("citrate_cycle_tca_cycle.json")
-
-
-pathwayNodeData<- pathWay[["elements"]][["nodes"]][["data"]]
-pathwayEdge<- pathWay[["elements"]][["edges"]][["data"]]
-tbl.nodes <- data.frame(id=pathwayNodeData[["id"]],
-                        x=pathwayNodeData[["xPos"]],
-                        y=pathwayNodeData[["yPos"]],
-                        stringsAsFactors=FALSE)
-
-tbl.edges <- data.frame(source=pathwayEdge[["source"]],
-                        target=pathwayEdge[["target"]],
-                        interaction=pathwayEdge[["interactionType"]],
-                        stringsAsFactors=FALSE)
-
-graph.json <- dataFramesToJSON(tbl.edges, tbl.nodes)
-#--------------------------------------------------------------------------
 
 dataSourceChoices <- setNames(names(config),
 															vapply(config, function(x) { x[["displayName"]] }, 
@@ -1691,51 +1674,159 @@ shinyServer(function(input, output, session) {
   
   
   #------[Analysis by pathway code]-----------------------------
+  reactiveData<-reactiveVal()
+  reactiveAverage<- reactiveVal()
+  reactiveDfList<-reactiveVal(pathwaysList)
+  
+  
+  displayGraph<- function(averageValues,minVal,maxVal){
+    pathwaysList<-reactiveDfList()
+    
+    forNodes<- pathwaysList[[input$selectPathway]][[1]]
+    forEdges<- pathwaysList[[input$selectPathway]][[2]]
+    namesOfNodes <- forNodes[["NodeName"]]
+    if(minVal==0)minVal=-0.0001
+    if(maxVal==0)maxVal=0.0001
+    rescaledAverage <- ifelse(is.na(averageValues), NA,
+                              ifelse(averageValues >= 0,
+                                     averageValues * 10 / maxVal,
+                                     averageValues * -10 / minVal ))
+    
+    #print(rescaledAverage)
+    tbl.nodes <- data.frame(id=forNodes[["NodeID"]],
+                            name=forNodes[["NodeName"]],
+                            x=forNodes[["PosX"]],
+                            y=forNodes[["PosY"]],
+                            avgValues=rescaledAverage,
+                            parent=forNodes[["ParentId"]],
+                            nodeType=forNodes[["NodeType"]],
+                            stringsAsFactors=FALSE)
+    
+    #family: e0e0ff, compartment: ffe0e0, complex: white
+    
+    tbl.edges <- data.frame(source=forEdges[["Source"]],
+                            target=forEdges[["Target"]],
+                            interaction=forEdges[["EdgeType"]],
+                            stringsAsFactors=FALSE)
+    
+    graph.json <- dataFramesToJSON(tbl.edges, tbl.nodes)
+    
+    output$cyjShiny <- renderCyjShiny({
+      cyjShiny(graph=graph.json, layoutName="preset",styleFile ="basicStyle.js")
+    })
+    
+    displayColorPlot(maxVal,minVal)
+  }
+  
+  displayTable <-function(selectedCells){
+    data<- reactiveData()
+    cellLineData<-data[,selectedCells,drop=FALSE]
+    
+    #print(cellLineData)
+    pathwaysList<-reactiveDfList()
+    namesOfNodes <- pathwaysList[[input$selectPathway]][[1]][["NodeName"]]
+    names <- as.list(row.names(data))
+    tableValuesAverages<- c()
+    tableValuesMedians<-c()
+    
+    for (nodeName in namesOfNodes) {
+      # Construct the name of the gene in the "exp" data frame
+      nameInData <- paste0("exp", nodeName)
+      # print(nameInData )
+      if (nameInData %in% names) {
+        #  print(nameInData)
+        # Calculate the average value for the gene  
+        cellVal <- mean(as.numeric(cellLineData[nameInData,]),na.rm=TRUE)
+        cellMed <- median(as.numeric(cellLineData[nameInData,],na.rm=TRUE))
+        
+        cellVal <- round(cellVal, 3) 
+        cellMed <- round(cellMed, 3)
+        
+        tableValuesAverages <- c(tableValuesAverages, cellVal)
+        tableValuesMedians <- c(tableValuesMedians,cellMed)
+        
+      } else {
+        tableValuesAverages <- c(tableValuesAverages, NA)
+        tableValuesMedians <- c(tableValuesMedians,NA)
+      }
+    } 
+    
+    reactiveAverage(tableValuesAverages)
+    maxVal<- max(c(tableValuesAverages,0.0001),na.rm = TRUE)
+    minVal<- min(c(tableValuesAverages,-0.0001),na.rm=TRUE)
+    
+    if(length(selectedCells)>1){
+      tableValuesDataFrame <- data.frame(Name = namesOfNodes, Average=tableValuesAverages, Median=tableValuesMedians)
+    }
+    else {
+      tableValuesDataFrame <- data.frame(Name = namesOfNodes, Value=tableValuesAverages)
+    }
+    
+    tableValuesDataFrame <- tableValuesDataFrame[!is.na(tableValuesDataFrame$Name) & tableValuesDataFrame$Name != "",]
+    
+    #print(tableValuesDataFrame)
+    
+    
+    
+    # Display the data table using DT package
+    output$nodeDatatable <- renderDataTable({
+      datatable(tableValuesDataFrame)
+    })
+    
+    if(length(tableValuesAverages)>1){
+      showElement("rangeSlider")
+      output$rangeSlider<- renderUI({
+        sliderInput("rangeSlider", "Value Range", 
+                    min = minVal, max = maxVal, value=c(minVal,maxVal))
+      })
+    }
+    return (tableValuesAverages)
+  }
+  
+  displayColorPlot<-function(maxVal,minVal){
+    showElement("colorPlot")
+    output$colorPlot<- renderPlot({
+      par(mar = c(0, 0, 0, 0)) # Set all margins to 0
+      plot(NULL, xaxt='n', yaxt='n', bty='n', ylab='', xlab='', xlim=0:1, ylim=0:1)
+      legend("center", legend =c(minVal,'0.0', maxVal),pt.cex=3, cex=1.5,bty='n',
+             fill = c('red', 'white', 'blue'), horiz=TRUE)
+      
+    })
+  } 
   
   
   observeEvent(input$fit, ignoreInit=TRUE, {
     fit(session, 80)
   })
   
-  observeEvent(input$showCondition, ignoreInit=TRUE, {
-    condition.name <- isolate(input$showCondition)
-    #printf(" condition.name: %s", condition.name)
-    values <- as.numeric(tbl.lfc[condition.name,])
-    node.names <- colnames(tbl.lfc)
-    #printf("sending lfc values for %s: %s", paste(node.names, collapse=", "), paste(values, collapse=", "))
-    setNodeAttributes(session, attributeName="lfc", nodes=node.names, values)
-    values <- as.numeric(tbl.count[condition.name,])
-    node.names <- colnames(tbl.count)
-    #printf("sending count values for %s: %s", paste(node.names, collapse=", "), paste(values, collapse=", "))
-    setNodeAttributes(session, attributeName="count", nodes=colnames(tbl.count), values)
-  })
   
-  observeEvent(input$loadStyleFile,  ignoreInit=FALSE, {
-    if(input$loadStyleFile != ""){
-      tryCatch({
-        loadStyleFile(input$loadStyleFile)
-      }, error=function(e) {
-        msg <- sprintf("ERROR in stylesheet file '%s': %s", input$loadStyleFile, e$message)
-        showNotification(msg, duration=NULL, type="error")
-      })
-      #later(function() {updateSelectInput(session, "loadStyleFile", selected=character(0))}, 0.5)
+  
+  
+  output$fileInputUI <- renderUI({
+    if (input$selectPathwayType == "Upload Pathway") {
+      fileInput("file", "Choose a file")
+    } else {
+      NULL
     }
   })
   
-  observeEvent(input$doLayout,  ignoreInit=TRUE,{
-    if(input$doLayout != ""){
-      strategy <- input$doLayout
-      doLayout(session, strategy)
-      later(function() {updateSelectInput(session, "doLayout", selected=character(0))}, 1)
-    }
+  observeEvent(input$cellLineSet,ignoreInit = TRUE,{
+    
+    data<- srcContent[[input$cellLineSet]][["molPharmData"]][["exp"]]
+    
+    reactiveData(data)
+    tissueToSampleMap<<- srcContent[[input$cellLineSet]][["tissueToSamplesMap"]]
+    tissueNames<- names(tissueToSampleMap)
+    cellLines<- as.list(colnames(data))
+    
+    updateSelectizeInput(session,"selectCellLine",choices = c("",cellLines))
+    updateSelectizeInput(session,"selectTissue",choices = c("",tissueNames))
   })
   
-  observeEvent(input$selectName,  ignoreInit=TRUE,{
-    selectNodes(session, input$selectName)
-  })
-  
-  observeEvent(input$sfn,  ignoreInit=TRUE,{
-    selectFirstNeighbors(session)
+  observeEvent(input$selectNode,  ignoreInit=TRUE,{
+    forNodes<- pathwaysList[[input$selectPathway]][[1]]
+    selectedNodeID <- forNodes$NodeID[forNodes$NodeName == input$selectNode]
+    selectNodes(session, selectedNodeID)
   })
   
   observeEvent(input$fitSelected,  ignoreInit=TRUE,{
@@ -1743,85 +1834,154 @@ shinyServer(function(input, output, session) {
   })
   
   
-  observeEvent(input$selectedNodes, ignoreInit=TRUE, {
-    printf(" selectedNodes event arrived: %s", paste(input$selectedNodes, collapse=","))
+  
+  observeEvent(input$selectGene,  ignoreInit=TRUE,{
+    if(input$selectGene != ""){
+      showElement("selectPathway")
+      gene<- input$selectGene
+      pathwaysList<-reactiveDfList()
+      extrapathwayNames <- names(pathwaysList)[grep(input$selectGene, names(pathwaysList))]
+      pathwayChoices <- extrapathwayNames
+      
+      for (pathway_name in names(pathwaysList)) {
+        pathway <- pathwaysList[[pathway_name]][[1]]
+        genes <- pathway[["NodeName"]]
+        if (gene %in% genes) {
+          pathwayChoices <- c(pathwayChoices, pathway_name)
+        }
+      }
+      pathwayChoices<-unique(pathwayChoices)
+      updateSelectInput(session, "selectPathway",choices = pathwayChoices)
+      if(length(pathwayChoices)==0){
+        updateSelectInput(session,"selectPathway",choices="No Pathway exists")
+      }
+      updateSelectInput(session,"selectGene",selected = input$selectGene)
+    }
   })
   
-  observeEvent(input$testGetSelectedNodesButton, ignoreInit=TRUE, {
-    printf("--- testGetSelectedNodes")
-    # clear selection, sleep, select 2 nodes, get selection
-    clearSelection(session);
-    selectNodes(session, c("Y", "Z"))
+  observeEvent(input$selectPathway,ignoreInit = TRUE,{
+    
+    if(input$selectPathway!="" & input$selectPathway!="No Pathway exists"){
+      showElement("options")
+      pathwaysList<-reactiveDfList()
+      forNodes<- pathwaysList[[input$selectPathway]][[1]]
+      forEdges<- pathwaysList[[input$selectPathway]][[2]]
+      namesOfNodes <- forNodes[["NodeName"]]
+      
+      updateSelectInput(session,"selectPathway",selected = input$selectPathway)
+      updateSelectInput(session,"selectNode",choices = c("",namesOfNodes))
+    }
   })
   
-  observeEvent(input$getSelectedNodes, ignoreInit=TRUE, {
-    output$selectedNodesDisplay <- renderText({" "})
-    getSelectedNodes(session)
-    #newNodes <- nodeSelection()
-    #printf("--- newNodes, not in test: %s", paste(newNodes, collapse=", "))
+  
+  observeEvent(input$selectCellLine,ignoreInit = TRUE,{
+    if(input$selectCellLine!=""){
+      selectedCellLine<- input$selectCellLine
+      #print(length(reactiveDfList()))
+      #print(is.vector(selectedCellLine))
+      if(input$selectPathway!="No Pathway exists"){
+        #print(input$selectPathway)
+        averages<- displayTable(selectedCellLine)
+        maxVal<- max(c(averages,0.0),na.rm = TRUE)
+        minVal<- min(c(averages,0.0),na.rm=TRUE)
+        
+        displayGraph(averages,maxVal,minVal)
+      }
+    }
   })
   
-  observeEvent(input$loopConditions, ignoreInit=TRUE, {
-    condition.names <- rownames(tbl.lfc)
-    for(condition.name in condition.names[-1]){
-      lfc.vector <- as.numeric(tbl.lfc[condition.name,])
-      node.names <- rownames(tbl.lfc)
-      setNodeAttributes(session, attributeName="lfc", nodes=node.names, values=lfc.vector)
-      #updateSelectInput(session, "setNodeAttributes", selected=condition.name)
-      Sys.sleep(1)
-    } # for condition.name
-    updateSelectInput(session, "setNodeAttributes", selected="baseline")
+  observeEvent(input$selectTissue,ignoreInit = TRUE,{
+    if(input$selectTissue!=""){
+      selectedTissue<- input$selectTissue
+      selectedCellLines <-tissueToSampleMap[selectedTissue]
+      
+      selectedCellLines <- unlist(selectedCellLines,use.names=FALSE)
+      
+      averages<-displayTable(selectedCellLines)
+      reactiveAverage(averages)
+      maxVal<- max(c(averages,0.0),na.rm = TRUE)
+      minVal<- min(c(averages,0.0),na.rm=TRUE)
+      displayGraph(averages,minVal,maxVal)
+    }
   })
   
-  #observeEvent(input$removeGraphButton, ignoreInit=TRUE, {
-  # removeGraph(session)
-  #})
+  observeEvent(input$rangeSlider,{
+    sliderValues<- input$rangeSlider
+    
+    #setting condition that first slider cannot go beyond zero and second cannot come below zero
+    if(sliderValues[1]>0){
+      updateSliderInput(session,"rangeSlider",value=c(-0.001,sliderValues[2]))
+    }
+    if(sliderValues[2]<0){
+      updateSliderInput(session,"rangeSlider",value=c(sliderValues[1],0.001))
+    }
+    averageValues<-reactiveAverage()
+    displayGraph(averageValues,sliderValues[1],sliderValues[2])
+  })
+
+  # Event handler for file upload
+  observeEvent(input$file, {
+    # Check if a file is uploaded
+    if (!is.null(input$file)) {
+      # Read the file
+      
+      data <- readLines(input$file$datapath)
+      
+      # Initialize empty vectors for nodes and edges
+      nodeLines <- c()
+      edgeLines <- c()
+      edgeLineStart<-0
+      nodeLineStart<-0
+      # Find the lines containing node and edge information
+      for (i in 1:length(data)) {
+        line <- data[i]
+        
+        if (grepl("--NODE_NAME", line))
+        {nodeLineStart<- i
+        }
+        else if(grepl("--EDGE_ID",line)){
+          edgeLineStart<- i
+          break
+        }
+      }
+      nodeLines<- data[(nodeLineStart+1):(edgeLineStart-1)]
+      edgeLines<- data[(edgeLineStart+1):length(data)]
+      
+      nodeData<- paste(nodeLines, collapse = "\t")
+      edgeData<- paste(edgeLines,collapse = "\t")
+      
+      nodefields <- strsplit(nodeData, "\t")
+      edgesfields <- strsplit(edgeData ,"\t")
+      
+      nodeDfPathway <- data.frame(matrix(unlist(nodefields), ncol = 8, byrow=TRUE))
+      edgeDfPathway <- data.frame(matrix(unlist(edgesfields), ncol = 8, byrow=TRUE))
+      
+      colnames(nodeDfPathway) <- c("NodeName", "NodeID", "NodeType", "ParentId", "PosX", "PosY","Width","Height")
+      # Convert PosX and PosY columns to numeric data type: this was needed in later part
+      nodeDfPathway$PosX <- as.double(nodeDfPathway$PosX)
+      nodeDfPathway$PosY <- as.double(nodeDfPathway$PosY)
+      
+      
+      colnames(edgeDfPathway) <- c("EdgeID", "Source", "Target", "EdgeType","Interaction","EdgeName","Bend","Curve")
+      pathwaysList<-reactiveDfList()
+      fileName<-input$file$name 
+      pathwaysList[[fileName]] <- list(nodeDfPathway, edgeDfPathway)
+      reactiveDfList(pathwaysList)
+
+      showElement("selectPathway")
+      updateSelectInput(session,"selectPathway",choices=c(fileName),selected = fileName)
+
+      showElement("options") 
+    }
+  })
   
-  #observeEvent(input$addRandomGraphFromDataFramesButton, ignoreInit=TRUE, {
-   # source.nodes <-  LETTERS[sample(1:5, 5)]
-    #target.nodes <-  LETTERS[sample(1:5, 5)]
-    #tbl.edges <- data.frame(source=source.nodes,
-     #                       target=target.nodes,
-      #                      interaction=rep("generic", length(source.nodes)),
-       #                     stringsAsFactors=FALSE)
-  #all.nodes <- sort(unique(c(source.nodes, target.nodes, "orphan")))
-   #tbl.nodes <- data.frame(id=all.nodes,
-    #                        type=rep("unspecified", length(all.nodes)),
-     #                       stringsAsFactors=FALSE)
-    #printf("-- about to addGraphFromDataFrame")
-    #print(tbl.edges)
-    #print(tbl.nodes)
-    #addGraphFromDataFrame(session, tbl.edges, tbl.nodes)
-  #})
-  
-  #nodeSelection <- reactive({
-  #   printf(" reactive function nodeSelection invoked")
-  #
-  #   })
   
   
-  #observe({
-  #    x <- nodeSelection()
-  #    printf(" at line 172, selected nodes: %s, testMode: %s",
-  #           paste(x, collapse=","),
-  #           nodeSelectionTestMode)
-  #    nodeSelectionTestMode <<- FALSE
-  #    })
   
-  #observeEvent(input$selectedNodes, {
-  #  communicated here via assignement in cyjShiny.js
-  #     Shiny.setInputValue("selectedNodes", value, {priority: "event"});
-  #newNodes <- input$selectedNodes;
-  #   newNodes <- nodeSelection()
-  #   output$selectedNodesDisplay <- renderText({
-  #     paste(newNodes)
-  #   })
+  #output$value <- renderPrint({ input$action })
+  # output$cyjShiny <- renderCyjShiny({
+  #   cyjShiny(graph=graph.json, layoutName="preset")
   # })
-  
-  output$value <- renderPrint({ input$action })
-  output$cyjShiny <- renderCyjShiny({
-    cyjShiny(graph=graph.json, layoutName="preset")
-  })
   
   
 

@@ -5,6 +5,7 @@ library(plotly)
 library(markdown)
 library(cyjShiny)
 library(later)
+library(shinyjs)
 
 # library(BiocManager)
 # options(repos = BiocManager::repositories())   ## bioconductor 3.8
@@ -17,6 +18,7 @@ library(later)
 #--------------------------------------------------------------------------------------------------
 # LOAD CONFIGURATION AND REQUIRED DATA SOURCE PACKAGES.
 #--------------------------------------------------------------------------------------------------
+
 config <- jsonlite::fromJSON("config.json")
 appConfig <- jsonlite::fromJSON("appConfig.json")
 metaConfig <- jsonlite::fromJSON("configMeta.json")
@@ -24,6 +26,8 @@ metaConfig <- jsonlite::fromJSON("configMeta.json")
 toplinks <- appConfig$TopLinks
 category <- appConfig$category
 banner <- appConfig$banner
+colorImages <-"files/colors.png" 
+
 
 source("modal1.R")
 source("appUtils.R")
@@ -38,6 +42,7 @@ dataSourceChoices <- setNames(names(config),
 															vapply(config, function(x) { x[["displayName"]] }, 
 																		 character(1)))
 
+data<-srcContent[["nci60"]][["molPharmData"]][["exp"]]
 
 
 options = "";
@@ -89,6 +94,9 @@ if (category == "internal") mytitle="<p style='text-align: center; font-size: 20
 
 shinyUI(
   fluidPage(
+  
+  useShinyjs(), #enable shinyjs
+  
   tags$html(lang="en"), 
   #tags$head(tags$style(type="text/css", ".body {color: blue;}",".clear {clear:both}")),
   tags$a(href="#skiplink","Skip over navigation",style="font-size: 10px; float: left"),
@@ -296,23 +304,41 @@ shinyUI(
 		
 		
 		#-----[NavBar Tab: Analysis by Pathway]---------------------------------------------------------------------
+		
 		tabPanel("Analysis by Pathway",
 		         fluidPage(
 		           tags$head(tags$style("#cyjShiny{height:95vh !important;}")),
 		           titlePanel(title="Analysis by Pathway"),
 		           sidebarLayout(
 		             sidebarPanel(
-		               selectInput("SelectData", "Select Pathway", choices = c("","Citrate cycle")),
-		               selectInput("doLayout", "Select Layout:",
-		                           choices=c("","cose","cola","circle","concentric","breadthfirst","grid","random","fcose","springy")),
+		               selectInput("cellLineSet","Cell line Set",c("","nci60","ccle")),
 		               
-		               selectInput("selectName", "Select Node by ID:", choices = c("")),
-		               actionButton("sfn", "Select First Neighbor"),
+		               selectInput("selectPathwayType","Select Pathway",c("","Upload Pathway","Select using Gene")),
+		               conditionalPanel(
+		                 condition = "input.selectPathwayType=='Select using Gene'",
+		                 selectInput("selectGene","Select Gene: ",choices=c("",allNodeNames))
+		               ),
+		               uiOutput("fileInputUI"),
+		               hidden(selectInput("selectPathway","Select Pathway: ",choices =c(""))),
+		               hidden(selectInput("options","Select Cell Line or Tissue",c("","Cell line","Tissue"))),
+		               
+		               conditionalPanel(
+		                 condition = "input.options=='Cell line'",
+		                 selectizeInput("selectCellLine","Select Cell Line",choices=NULL),
+		               ),
+		               conditionalPanel(
+		                 condition = "input.options=='Tissue'",
+		                 selectizeInput("selectTissue","Select Tissue",c("")),
+		               ),
+		               hidden(uiOutput("rangeSlider")),
+		               hidden(plotOutput("colorPlot",height = "50px",width="auto")),
+		               
+		               selectInput("selectNode", "Select Node by ID:", choices = c("")),
+
 		               actionButton("fit", "Fit Graph"),
 		               actionButton("fitSelected", "Fit Selected"),
-		               htmlOutput("selectedNodesDisplay"),
-		               dataTableOutput("table",),
-		               width=3
+		               dataTableOutput("nodeDatatable"),
+		               width=3,
 		             ),
 		             mainPanel(cyjShinyOutput('cyjShiny', height=400),width=9)
 		           ) # sidebarLayout

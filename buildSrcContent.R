@@ -1,5 +1,6 @@
 library(rcellminer)
 
+
 config <- jsonlite::fromJSON("config.json")
 
 source("appUtils.R")
@@ -20,5 +21,5 @@ srcContent$nci60$tissueColorMap <- c(by(nci60ColorTab, nci60ColorTab$OncoTree1,
 saveRDS(srcContent, "srcContent.rds", compress = FALSE)
 
 
-source("ReadingPathway.R")
-saveRDS(df_list,"PathwayMapper.rds",compress=FALSE)
+source("ReadingPathway.R") # for pathways loading
+saveRDS(df_list,"df_list.rds",compress = FALSE)
