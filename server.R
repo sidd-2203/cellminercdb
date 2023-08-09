@@ -1685,8 +1685,10 @@ shinyServer(function(input, output, session) {
     forNodes<- pathwaysList[[input$selectPathway]][[1]]
     forEdges<- pathwaysList[[input$selectPathway]][[2]]
     namesOfNodes <- forNodes[["NodeName"]]
+    
     if(minVal==0)minVal=-0.0001
     if(maxVal==0)maxVal=0.0001
+    
     rescaledAverage <- ifelse(is.na(averageValues), NA,
                               ifelse(averageValues >= 0,
                                      averageValues * 10 / maxVal,

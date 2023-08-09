@@ -22,4 +22,4 @@ saveRDS(srcContent, "srcContent.rds", compress = FALSE)
 
 
 source("ReadingPathway.R") # for pathways loading
-saveRDS(df_list,"df_list.rds",compress = FALSE)
+#saveRDS(df_list,"PathwaysList.rds",compress = FALSE)

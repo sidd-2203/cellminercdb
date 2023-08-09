@@ -5,8 +5,8 @@ library(jsonlite)
 pathways <- jsonlite::fromJSON("pathways.json")
 
 # Initialize data frame for node and edges fields
-nodeDataFrame <- data.frame()
-edgeDataFrame <- data.frame()
+#nodeDataFrame <- data.frame()
+#edgeDataFrame <- data.frame()
 pathwaysList <- list()
 
 
@@ -39,8 +39,8 @@ for (pathway in pathways) {
   colnames(edgeDataFramePathway) <- c("EdgeID", "Source", "Target", "EdgeType")
   
   # Remove empty rows
-  nodeDataFrame <- nodeDataFrame[rowSums(nodeDataFrame == "") != ncol(nodeDataFrame),]
-  edgeDataFrame <- edgeDataFrame[rowSums(edgeDataFrame == "") != ncol(edgeDataFrame),]
+  nodeDataFramePathway <- nodeDataFramePathway[rowSums(nodeDataFramePathway == "") != ncol(nodeDataFramePathway),]
+  edgeDataFramePathway <- edgeDataFramePathway[rowSums(edgeDataFramePathway == "") != ncol(edgeDataFramePathway),]
   
   nodeDataFramePathway<- nodeDataFramePathway[-1,]
   edgeDataFramePathway<- edgeDataFramePathway[-1,]
@@ -54,8 +54,6 @@ for (pathway in pathways) {
 # Remove duplicates from the vector
 allNodeNames <- unique(allNodeNames)
 
-# Output the modified vector of node names
-#print(all_node_names)
 
 
 
