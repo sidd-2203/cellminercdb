@@ -21,5 +21,5 @@ srcContent$nci60$tissueColorMap <- c(by(nci60ColorTab, nci60ColorTab$OncoTree1,
 saveRDS(srcContent, "srcContent.rds", compress = FALSE)
 
 
-source("ReadingPathway.R") # for pathways loading
+source("readingPathway.R") # for pathways loading
 #saveRDS(df_list,"PathwaysList.rds",compress = FALSE)

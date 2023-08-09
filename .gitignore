@@ -5,5 +5,5 @@
 *.rds
 *.csv 
 .RDataTmp
-testing
-oncotree1_colors
+testing.R
+oncotree1_colors.txt
