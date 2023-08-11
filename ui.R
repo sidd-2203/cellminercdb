@@ -300,50 +300,65 @@ shinyUI(
 		           )
 		         ) #end fluidPage
 		), #end tabPane
-		  
-		
-		
-		#-----[NavBar Tab: Analysis by Pathway]---------------------------------------------------------------------
-		
+
+
+		#-----[NavBar Tab: Analysis by Pathway]-------------------------------------
 		tabPanel("Analysis by Pathway",
 		         fluidPage(
 		           tags$head(tags$style("#cyjShiny{height:95vh !important;}")),
-		           titlePanel(title="Analysis by Pathway"),
+		           titlePanel(title = "Analysis by Pathway"),
 		           sidebarLayout(
 		             sidebarPanel(
-		               selectInput("cellLineSet","Cell line Set",c("","nci60","ccle")),
-		               
-		               selectInput("selectPathwayType","Select Pathway",c("","Upload Pathway","Select using Gene")),
+		               selectInput("cellLineSet", "Cell line Set",
+		                           c("", "nci60", "ccle")),
+
+		               selectInput(
+		                 "selectPathwayType",
+		                 "Select Pathway",
+		                 c("", "Upload Pathway", "Select using Gene")
+		               ),
 		               conditionalPanel(
 		                 condition = "input.selectPathwayType=='Select using Gene'",
-		                 selectInput("selectGene","Select Gene: ",choices=c("",allNodeNames))
+		                 selectInput("selectGene", "Select Gene: ", choices =
+		                               c("", allNodeNames))
 		               ),
 		               uiOutput("fileInputUI"),
-		               hidden(selectInput("selectPathway","Select Pathway: ",choices =c(""))),
-		               hidden(selectInput("options","Select Cell Line or Tissue",c("","Cell line","Tissue"))),
-		               
+		               hidden(selectInput(
+		                 "selectPathway", "Select Pathway: ", choices = NULL
+		               )),
+		               hidden(selectInput(
+		                 "options",
+		                 "Select Cell Line or Tissue",
+		                 c("", "Cell line", "Tissue")
+		               )),
+
 		               conditionalPanel(
 		                 condition = "input.options=='Cell line'",
-		                 selectizeInput("selectCellLine","Select Cell Line",choices=NULL),
+		                 selectizeInput("selectCellLine", "Select Cell Line",
+		                                choices = NULL),
 		               ),
 		               conditionalPanel(
 		                 condition = "input.options=='Tissue'",
-		                 selectizeInput("selectTissue","Select Tissue",c("")),
+		                 selectizeInput("selectTissue", "Select Tissue",
+		                                choices = NULL),
 		               ),
 		               hidden(uiOutput("rangeSlider")),
-		               hidden(plotOutput("colorPlot",height = "50px",width="auto")),
-		               
-		               selectInput("selectNode", "Select Node by ID:", choices = c("")),
+		               hidden(plotOutput(
+		                 "colorPlot", height = "50px", width = "auto"
+		               )),
 
+		               selectInput("selectNode", "Select Node by ID:"
+		                           , choices = NULL),
 		               actionButton("fit", "Fit Graph"),
 		               actionButton("fitSelected", "Fit Selected"),
 		               DT::dataTableOutput("nodeDatatable"),
-		               width=3,
+		               width = 3,
 		             ),
-		             mainPanel(cyjShinyOutput('cyjShiny', height=400),width=9)
+		             mainPanel(cyjShinyOutput("cyjShiny", height = 400),
+		                       width = 9)
 		           ) # sidebarLayout
-		         )
-		), #end tabPane
+		         )), #end tabPane
+		
 		#-----[NavBar Tab: About]------------------------------------------------------------------------
 # 		tabPanel("TCGA distribution",
 # 		            fluidPage(	

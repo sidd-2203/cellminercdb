@@ -15,11 +15,10 @@ if (any(!isLoadedSrc)){
 # For NCI-60, replace default color map to use CellMiner tissue type colors.
 nci60ColorTab <- loadNciColorSet(returnDf=TRUE)
 nci60ColorTab$OncoTree1 <- srcContent$nci60$sampleData$OncoTree1
-srcContent$nci60$tissueColorMap <- c(by(nci60ColorTab, nci60ColorTab$OncoTree1, 
-																				FUN = function(x) unique(x$colors)))
+srcContent$nci60$tissueColorMap <- c(by(nci60ColorTab, nci60ColorTab$OncoTree1,
+                                        FUN = function(x) unique(x$colors)))
 
 saveRDS(srcContent, "srcContent.rds", compress = FALSE)
 
 
 source("readingPathway.R") # for pathways loading
-#saveRDS(df_list,"PathwaysList.rds",compress = FALSE)

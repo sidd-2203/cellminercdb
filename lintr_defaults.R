@@ -11,7 +11,7 @@ library(lintr)
 # object_usage_linter,
 # extraction_operator_linter
 
-filename <- "app.R"
+filename <- "ui.R"
 lint(filename, linters=list(
   absolute_path_linter(),
   assignment_linter(),
