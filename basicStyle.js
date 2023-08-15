@@ -24,7 +24,7 @@
     "shape":"cut-rectangle"
   }},
   // Every node background color
-   {"selector":"node[avgValues = 'NA']", "css": {
+   {"selector":"node[avgValues == 'NA']", "css": {
        "background-color": "grey"
   }},
   

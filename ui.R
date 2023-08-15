@@ -31,6 +31,7 @@ colorImages <-"files/colors.png"
 
 source("modal1.R")
 source("appUtils.R")
+source("analysisByPathway.R")
 
 if (!is.null(appConfig$appName)){
 	appTitle <- appConfig$appName
@@ -41,9 +42,6 @@ if (!is.null(appConfig$appName)){
 dataSourceChoices <- setNames(names(config),
 															vapply(config, function(x) { x[["displayName"]] }, 
 																		 character(1)))
-
-data<-srcContent[["nci60"]][["molPharmData"]][["exp"]]
-
 
 options = "";
 for(y in 1:length(dataSourceChoices)){
@@ -303,61 +301,7 @@ shinyUI(
 
 
 		#-----[NavBar Tab: Analysis by Pathway]-------------------------------------
-		tabPanel("Analysis by Pathway",
-		         fluidPage(
-		           tags$head(tags$style("#cyjShiny{height:95vh !important;}")),
-		           titlePanel(title = "Analysis by Pathway"),
-		           sidebarLayout(
-		             sidebarPanel(
-		               selectInput("cellLineSet", "Cell line Set",
-		                           c("", "nci60", "ccle")),
-
-		               selectInput(
-		                 "selectPathwayType",
-		                 "Select Pathway",
-		                 c("", "Upload Pathway", "Select using Gene")
-		               ),
-		               conditionalPanel(
-		                 condition = "input.selectPathwayType=='Select using Gene'",
-		                 selectInput("selectGene", "Select Gene: ", choices =
-		                               c("", allNodeNames))
-		               ),
-		               uiOutput("fileInputUI"),
-		               hidden(selectInput(
-		                 "selectPathway", "Select Pathway: ", choices = NULL
-		               )),
-		               hidden(selectInput(
-		                 "options",
-		                 "Select Cell Line or Tissue",
-		                 c("", "Cell line", "Tissue")
-		               )),
-
-		               conditionalPanel(
-		                 condition = "input.options=='Cell line'",
-		                 selectizeInput("selectCellLine", "Select Cell Line",
-		                                choices = NULL),
-		               ),
-		               conditionalPanel(
-		                 condition = "input.options=='Tissue'",
-		                 selectizeInput("selectTissue", "Select Tissue",
-		                                choices = NULL),
-		               ),
-		               hidden(uiOutput("rangeSlider")),
-		               hidden(plotOutput(
-		                 "colorPlot", height = "50px", width = "auto"
-		               )),
-
-		               selectInput("selectNode", "Select Node by ID:"
-		                           , choices = NULL),
-		               actionButton("fit", "Fit Graph"),
-		               actionButton("fitSelected", "Fit Selected"),
-		               DT::dataTableOutput("nodeDatatable"),
-		               width = 3,
-		             ),
-		             mainPanel(cyjShinyOutput("cyjShiny", height = 400),
-		                       width = 9)
-		           ) # sidebarLayout
-		         )), #end tabPane
+		analysisByPathwayInput("pathwayAnalysis"),
 		
 		#-----[NavBar Tab: About]------------------------------------------------------------------------
 # 		tabPanel("TCGA distribution",

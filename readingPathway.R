@@ -1,5 +1,3 @@
-
-
 library(jsonlite)
 # Read the JSON file
 pathways <- jsonlite::fromJSON("pathways.json")
