@@ -1,3 +1,9 @@
+
+#[INSTRUCTIONS]
+# Before using this module, please make sure to execute the
+# buildSrcContent.R or the readingPathway.R file to initialize the necessary variables:
+# allNodeNames and pathwaysList
+  
 #------[NavBar Tab: Analysis by pathway (UI code)]-----------------------------
 
 analysisByPathwayInput <- function(id) {
