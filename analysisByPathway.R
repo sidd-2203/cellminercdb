@@ -6,7 +6,8 @@
   
 #------[NavBar Tab: Analysis by pathway (UI code)]-----------------------------
 
-analysisByPathwayInput <- function(id) {
+prefix <- "xsq"
+analysisByPathwayInput <- function(id,dataSourceChoices) {
   ns <- NS(id)
   tabPanel("Analysis by Pathway",
            fluidPage(
@@ -15,7 +16,7 @@ analysisByPathwayInput <- function(id) {
              sidebarLayout(
                sidebarPanel(
                  selectInput(ns("cellLineSet"), "Cell line Set",
-                             c("", "nci60", "ccle")),
+                             choices = dataSourceChoices),
 
                  selectInput(
                    ns("selectPathwayType"),
@@ -25,12 +26,12 @@ analysisByPathwayInput <- function(id) {
                  conditionalPanel(
                    condition = paste0("input['", ns("selectPathwayType"),
                                       "'] =='Select using Gene'"),
-                   selectInput(ns("selectGene"), "Select Gene: ", choices =
-                                 c("", allNodeNames))
+                   selectInput(ns("selectGene"), "Select Gene: ",
+                               choices = NULL)
                  ),
                  uiOutput(ns("fileInputUI")),
                  shinyjs::hidden(selectInput(
-                   ns("selectPathway"), "Select Pathway : ", choices = NULL
+                   ns("selectPathway"), "Select Pathway", choices = NULL
                  )),
                  shinyjs::hidden(selectInput(
                    ns("options"),
@@ -61,7 +62,10 @@ analysisByPathwayInput <- function(id) {
                  DT::dataTableOutput(ns("nodeDatatable")),
                  width = 3,
                ),
-               mainPanel(cyjShinyOutput(ns("cyjShiny"), height = 800), )
+               mainPanel(
+                 #tags$head(tags$style(HTML(".mainPanelCyjShiny {border: 1px solid #000000;}"))),
+                 cyjShinyOutput(ns("cyjShiny"), height = 800), 
+                 )
              ) # sidebarLayout
            )) #end tabPane
 }
@@ -135,8 +139,8 @@ pathwayAnalysis <- function(id, srcContentReactive) {
       tableValuesMedians <- NULL
 
       for (nodeName in namesOfNodes) {
-        # Construct the name of the gene in the "exp" data frame
-        nameInData <- paste0("exp", nodeName)
+        # Construct the name of the gene in the "xsq" data frame
+        nameInData <- paste0(prefix, nodeName)
         if (nameInData %in% names) {
           # Calculate the average value for the gene
           cellVal <-
@@ -212,7 +216,7 @@ pathwayAnalysis <- function(id, srcContentReactive) {
           pt.cex = 3,
           cex = 1.5,
           bty = "n",
-          fill = c("red", "white", "blue"),
+          fill = c("blue", "white", "red"),
           horiz = TRUE
         )
       })
@@ -220,6 +224,17 @@ pathwayAnalysis <- function(id, srcContentReactive) {
 
     observeEvent(input$fit, ignoreInit = TRUE, {
       fit(session, 80)
+    })
+    observeEvent(input$selectPathwayType,ignoreInit = TRUE,{
+      srcContent <- srcContentReactive()
+      selectedCellLineSet <- input$cellLineSet
+      if(input$selectPathwayType == "Select using Gene"){
+        data <-
+          srcContent[[selectedCellLineSet]][["molPharmData"]][[prefix]]
+        genes <- rownames(data)
+        nodeNames <- intersect(sub(paste0("^",prefix), "", genes), allNodeNames)
+        updateSelectizeInput(session,"selectGene",choices = nodeNames)
+      }
     })
 
     output$fileInputUI <- renderUI({
@@ -231,17 +246,16 @@ pathwayAnalysis <- function(id, srcContentReactive) {
       }
     })
 
-    observeEvent(input$cellLineSet, ignoreInit = TRUE, {
+    observeEvent(input$cellLineSet, {
       ns <- session$ns
-      print(ns)
       srcContent <- srcContentReactive()
+      selectedCellLineSet <- input$cellLineSet
       data <-
-        srcContent[[input$cellLineSet]][["molPharmData"]][["exp"]]
+        srcContent[[selectedCellLineSet]][["molPharmData"]][[prefix]]
 
       reactiveData(data)
       tissueToSampleMap <-
-        srcContent[[input$cellLineSet]][["tissueToSamplesMap"]]
-
+        srcContent[[selectedCellLineSet]][["tissueToSamplesMap"]]
       reactiveTissueToSampleMap(tissueToSampleMap)
 
       tissueNames <- names(tissueToSampleMap)
@@ -426,7 +440,6 @@ pathwayAnalysis <- function(id, srcContentReactive) {
             pathwaysList[[fileName]] <-
               list(nodeDfPathway, edgeDfPathway)
             reactiveDfList(pathwaysList)
-            print(pathwaysList)
             shinyjs::showElement("selectPathway")
             updateSelectInput(
               session,

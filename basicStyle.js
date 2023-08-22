@@ -29,10 +29,10 @@
   }},
   
   {"selector":"node[avgValues <= 0]", "css": {
-       "background-color": "mapData(avgValues, -10, 0, red, white)"
+       "background-color": "mapData(avgValues, -10, 0, blue, white)"
   }},
   {"selector":"node[avgValues > 0]", "css": {
-       "background-color": "mapData(avgValues, 0, 10, white, blue)"
+       "background-color": "mapData(avgValues, 0, 10, white, red)"
   }},
   
   {"selector": "node:selected", "css": {

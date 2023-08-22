@@ -17,6 +17,7 @@ output: html_document
   - [Technical Details](#details)
   - [Partial correlations](#partialcorr)
   - [Exploratory workflow](#workflow)
+- [Analysis by Pathway](#pathways)
 -	[Metadata](#metadata)
 - [Search IDs](#search)
       - [Drug IDs](#drugid)
@@ -200,6 +201,45 @@ Mutilple data analysis workflows may be used dependent of the question being ask
 3.  Upon finding two or more associations with single 'response' variable through [Pattern Comparison/2D Plot], check if they complement one another in a multivariate model [Regression Models]. Example: Starting with the dominant SLFN11, adding TGFBR3 does not add to the regression model, but BPTF does.
 <br>
 4.  Repeat the above steps as needed.
+
+<h2 id="pathways">Analysis By Pathway</h2>
+This module is designed to visualize the genetic pathways on the profiling data. Currently, it is a demo and has 10 TCGA pathways. All the inputs are on the sidebar panel and the pathway will be visualized on the main panel on the right side.
+
+<h4 id="inputsTopathway">Input Data</h4>
+1. **CellLineSet** selects the data source. The user can choose NCI60, CCLE, GDSC, CTRP, or NCI/DTP SCLC (see Data Sources for more details).
+2. **Select Pathway** offers two options for selecting a pathway: using a gene or uploading a pathway.
+   - Using **Upload Pathway**, you can visualize any pathway drawn on pathwaymapper.org. An example file can be found in the project repository. Upload the pathway and select the cell line or tissue.
+   - Using **Select using Gene**, you can choose from a list of genes available in any of the pathways in the list.
+3. **Select Gene** provides a list of genes available in at least one of the pathways.
+4. **Select Pathway** shows the list of pathways that include the selected gene or have the name of the uploaded pathway.
+5. **Select Cell Line or Tissue** offers two options for selecting cell lines or tissues to visualize the pathway:
+   - The **Select Tissue** option is visible if tissue is selected, showing different tissue options.
+   - The **Select Cell Line** option is visible if selected, showing different cell lines based on the chosen Cell Line Set.
+6. **Select Node** can be used to focus on a specific node. Choose a node from the dropdown to highlight it in the network.
+
+The **Fit Graph** button resizes the network on the main panel to display the complete network.
+The **Fit Selected** button zooms in on the selected node, allowing you to visualize a specific part of the network. 
+
+A **Slider Input** is available to visualize the network colors and observe the effects of changes. Its maximum value is determined by the highest possible value, and the minimum corresponds accordingly.
+
+A **Data Table** is generated alongside the network on the side panel. When a tissue is selected, it displays the median and average values of the cell lines within that tissue. If a cell line is selected, it shows values of genes present in the network related to the cell line.
+
+The **Main Panel** displays the network with the following properties:
+  - Nodes are colored based on averages for tissues or values for cell lines.
+  - Highly expressed genes are represented in shades of red, while less expressed genes are in shades of blue.
+  - Interactions are color-coded based on their type:
+    - Solid Red represents *INHIBITS*
+    - Solid Green represents *ACTIVATES*
+    - Black represents *BINDS*
+    - Dashed Green represents *INDUCES*
+    - Dashed Red represents *REPRESSES*
+  - Nodes (Compounds or Simple) are shaped according to their type:
+    - *Family* is represented by a *Rectangle* 
+    - *Gene* is represented by a *Rounded Rectangle*
+    - *Compartment* is represented by a *Barrel*
+    - *Complex* is represented by a *Cut Rectangle*
+
+
 
 <h2 id="metadata">Metadata</h2>
 This option enumerates for each cell line set, the available data types that could be queried within the app providing the data type abbreviation or prefix, description, feature value unit (z-score, intensity, probability …), platform or experiment and related publication reference (pubmed). First the user should specify the **Cell Line Set** or data source to view all available associated data types. Then he can download data via: **Select Data Type to Download** and then click on **Download Data type** and/or **Download Data Footnotes** to download any data or footnotes for the selected cell line set. Finally the user has the option to **Download current cell line set information** and **Download drug synonyms table with matching IDs for all cell line sets** by clicking respectively on **Download cell line annotation** and **Download table**.

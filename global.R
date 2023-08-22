@@ -1,3 +1,5 @@
+source("readingPathway.R") # for pathways loading
+
 # NOTE: Size is not automatically set for rChartsAlternative output
 plotHeight <- 1100
 plotWidth <- 1400

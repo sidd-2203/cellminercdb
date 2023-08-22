@@ -301,7 +301,7 @@ shinyUI(
 
 
 		#-----[NavBar Tab: Analysis by Pathway]-------------------------------------
-		analysisByPathwayInput("pathwayAnalysis"),
+		analysisByPathwayInput("pathwayAnalysis",dataSourceChoices),
 		
 		#-----[NavBar Tab: About]------------------------------------------------------------------------
 # 		tabPanel("TCGA distribution",

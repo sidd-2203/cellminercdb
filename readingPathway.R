@@ -29,11 +29,6 @@ for (pathway in pathways) {
   colnames(nodeDFPathway) <- c("NodeName", "NodeID", "NodeType",
                                "ParentId", "PosX", "PosY")
 
-  # Convert PosX and PosY columns to numeric data type
-  # this was needed in later part( In Cytoscape.js)
-  nodeDFPathway$PosX <- as.double(nodeDFPathway$PosX)
-  nodeDFPathway$PosY <- as.double(nodeDFPathway$PosY)
-
   colnames(edgeDFPathway) <- c("EdgeID", "Source", "Target", "EdgeType")
   # Remove empty rows
   nodeDFPathway <- nodeDFPathway[rowSums(nodeDFPathway == "")
@@ -44,8 +39,17 @@ for (pathway in pathways) {
   nodeDFPathway <- nodeDFPathway[-1, ]
   edgeDFPathway <- edgeDFPathway[-1, ]
 
+  # Convert PosX and PosY columns to numeric data type
+  # this was needed in later part( In Cytoscape.js)
+  nodeDFPathway$PosX <- as.double(nodeDFPathway$PosX)
+  nodeDFPathway$PosY <- as.double(nodeDFPathway$PosY)
+
   pathwaysList[[pathway[1]]] <- list(nodeDFPathway, edgeDFPathway)
-  allNodeNames <- c(allNodeNames, nodeDFPathway$NodeName)
+  
+  # Filter nodes by NodeType "GENE"
+  geneNodes <- nodeDFPathway[nodeDFPathway$NodeType == "GENE", "NodeName"]
+  
+  allNodeNames <- c(allNodeNames, geneNodes)
 }
 # Remove duplicates from the vector
 allNodeNames <- unique(allNodeNames)
