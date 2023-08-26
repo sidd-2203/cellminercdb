@@ -16,7 +16,7 @@ library(grid)
 library(rstudioapi)
 library(DT)
 library(shinyjs)
-
+library(fgsea)
 ## library(shinyHeatmaply)
 #library(dplyr)
 #library(svglite)
@@ -35,7 +35,7 @@ if (!require(rcellminerUtilsCDB)){
 config <- jsonlite::fromJSON("config.json")
 appConfig <- jsonlite::fromJSON("appConfig.json")
 metaConfig <- jsonlite::fromJSON("configMeta.json")
-
+  
 
 
 oncolor <- read.delim("oncotree1_colors.txt",row.names = 1,stringsAsFactors = F)

@@ -4,7 +4,8 @@
     "width": "data(size)",
     "height": "data(size)", 
     "content": "data(name)",
-    "background-color":"grey"
+    "background-color":"white",
+    "border-color":"black"
   }},
   
   {"selector":"node[nodeType = 'FAMILY']","css":{
@@ -23,11 +24,7 @@
   {"selector":"node[nodeType = 'COMPLEX']","css":{
     "shape":"cut-rectangle"
   }},
-  // Every node background color
-   {"selector":"node[avgValues == 'NA']", "css": {
-       "background-color": "grey"
-  }},
-  
+
   {"selector":"node[avgValues <= 0]", "css": {
        "background-color": "mapData(avgValues, -10, 0, blue, white)"
   }},
@@ -36,7 +33,7 @@
   }},
   
   {"selector": "node:selected", "css": {
-       "overlay-opacity": 0.3,
+       "overlay-opacity": 0.6,
        "overlay-color": "gray"
   }},
    
@@ -47,7 +44,7 @@
 
   {"selector": "edge[interaction='INHIBITS']", "css": {
     "line-color": "red",
-    "target-arrow-shape": "triangle",
+    "target-arrow-shape": "tee",
     "target-arrow-color": "red"
   }},
   {"selector": "edge[interaction='ACTIVATES']", "css": {
@@ -57,7 +54,6 @@
   }},
   {"selector": "edge[interaction='BINDS']", "css": {
     "line-color": "black",
-    "target-arrow-shape": "triangle",
     "target-arrow-color": "black"
   }},
   {"selector": "edge[interaction='INDUCES']", "css": {
@@ -69,7 +65,7 @@
   {"selector": "edge[interaction='REPRESSES']", "css": {
     "line-color": "red",
     "line-style": "dashed",
-    "target-arrow-shape": "triangle",
+    "target-arrow-shape": "tee",
     "target-arrow-color": "red"
   }}
 ]

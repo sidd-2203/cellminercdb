@@ -4,11 +4,28 @@
 # buildSrcContent.R or the readingPathway.R file to initialize the necessary variables:
 # allNodeNames and pathwaysList
   
+#data(examplePathways)
+# data(exampleRanks)
+# 
+#type(examplePathways)
+# exampleRanks
+# fgseaRes <- fgsea(pathways = examplePathways[1], 
+#                   stats    = exampleRanks,
+#                   minSize  = 3,
+#                   maxSize  = 500, 
+#                   nperm = 10)
+# 
+# 
+# fgseaRes
+
+
 #------[NavBar Tab: Analysis by pathway (UI code)]-----------------------------
 
 prefix <- "xsq"
 analysisByPathwayInput <- function(id,dataSourceChoices) {
   ns <- NS(id)
+  dataSourcesToRemove <- c("almanac","mdaMills","ctrp")
+  dataSourceChoices <- dataSourceChoices[!(dataSourceChoices %in% dataSourcesToRemove)]
   tabPanel("Analysis by Pathway",
            fluidPage(
              tags$head(tags$style("#cyjShiny{height:95vh !important;}")),
@@ -17,15 +34,17 @@ analysisByPathwayInput <- function(id,dataSourceChoices) {
                sidebarPanel(
                  selectInput(ns("cellLineSet"), "Cell line Set",
                              choices = dataSourceChoices),
-
-                 selectInput(
-                   ns("selectPathwayType"),
-                   "Select Pathway",
-                   c("", "Upload Pathway", "Select using Gene")
-                 ),
+                
+                 radioButtons(ns("selectPathwaySource"),"Select Pathway Source",
+                              c("Use Built-in Pathway List","Upload Pathway")),
+                 # selectInput(
+                 #   ,
+                 #   "",
+                 #   c("", "Upload Pathway", "Select using Gene")
+                 # ),
                  conditionalPanel(
-                   condition = paste0("input['", ns("selectPathwayType"),
-                                      "'] =='Select using Gene'"),
+                   condition = paste0("input['", ns("selectPathwaySource"),
+                                      "'] =='Use Built-in Pathway List'"),
                    selectInput(ns("selectGene"), "Select Gene: ",
                                choices = NULL)
                  ),
@@ -36,7 +55,7 @@ analysisByPathwayInput <- function(id,dataSourceChoices) {
                  shinyjs::hidden(selectInput(
                    ns("options"),
                    "Select Cell Line or Tissue",
-                   c("", "Cell line", "Tissue")
+                   c("","Cell line", "Tissue")
                  )),
 
                  conditionalPanel(
@@ -63,7 +82,7 @@ analysisByPathwayInput <- function(id,dataSourceChoices) {
                  width = 3,
                ),
                mainPanel(
-                 #tags$head(tags$style(HTML(".mainPanelCyjShiny {border: 1px solid #000000;}"))),
+                 textOutput("gseaText"),  
                  cyjShinyOutput(ns("cyjShiny"), height = 800), 
                  )
              ) # sidebarLayout
@@ -117,7 +136,7 @@ pathwayAnalysis <- function(id, srcContentReactive) {
       )
 
       graphJson <- dataFramesToJSON(tblEdges, tblNodes)
-
+      #write(graphJson,file="GraphData.json")
       output$cyjShiny <- renderCyjShiny({
         cyjShiny(graph = graphJson,
                  layoutName = "preset",
@@ -158,6 +177,26 @@ pathwayAnalysis <- function(id, srcContentReactive) {
           tableValuesMedians <- c(tableValuesMedians, NA)
         }
       }
+      
+      # Assuming namesOfNodes and tableValuesAverages are already defined
+      # namedMean <- setNames(tableValuesAverages, namesOfNodes)
+      # # Remove elements with NA values
+      # namedMean <- namedMean[!is.na(namedMean)]
+      # 
+      # examplePathways <- list()
+      # examplePathways[[input$selectPathway]] <- names(namedMean)
+      # 
+      # print(namedMean)
+      # print(examplePathways[1])
+      # 
+      # fgseaRes <- fgsea(pathways = examplePathways[1],
+      #                   stats    = namedMean,
+      #                   minSize  = 3,
+      #                   maxSize  = 500,
+      #                   nperm = 10)
+      # output$gseaText <-renderText({
+      #   paste0()
+      # })
 
       reactiveAverage(tableValuesAverages)
       maxVal <- max(c(tableValuesAverages, 0.0001), na.rm = TRUE)
@@ -222,13 +261,31 @@ pathwayAnalysis <- function(id, srcContentReactive) {
       })
     }
 
-    observeEvent(input$fit, ignoreInit = TRUE, {
-      fit(session, 80)
-    })
-    observeEvent(input$selectPathwayType,ignoreInit = TRUE,{
+    observeEvent(input$cellLineSet, {
+      ns <- session$ns
       srcContent <- srcContentReactive()
       selectedCellLineSet <- input$cellLineSet
-      if(input$selectPathwayType == "Select using Gene"){
+      data <-
+        srcContent[[selectedCellLineSet]][["molPharmData"]][[prefix]]
+      
+      reactiveData(data)
+      tissueToSampleMap <-
+        srcContent[[selectedCellLineSet]][["tissueToSamplesMap"]]
+      reactiveTissueToSampleMap(tissueToSampleMap)
+      
+      tissueNames <- names(tissueToSampleMap)
+      cellLines <- as.list(colnames(data))
+      
+      updateSelectizeInput(session, "selectCellLine",
+                           choices =c("",cellLines))
+      updateSelectizeInput(session, "selectTissue",
+                           choices = c("",tissueNames))
+    })
+    
+    observeEvent(input$selectPathwaySource,{
+      srcContent <- srcContentReactive()
+      selectedCellLineSet <- input$cellLineSet
+      if(input$selectPathwaySource == "Use Built-in Pathway List"){
         data <-
           srcContent[[selectedCellLineSet]][["molPharmData"]][[prefix]]
         genes <- rownames(data)
@@ -237,48 +294,7 @@ pathwayAnalysis <- function(id, srcContentReactive) {
       }
     })
 
-    output$fileInputUI <- renderUI({
-      ns <- session$ns
-      if (input$selectPathwayType == "Upload Pathway") {
-        fileInput(ns("file"), "Choose a file")
-      } else {
-        NULL
-      }
-    })
-
-    observeEvent(input$cellLineSet, {
-      ns <- session$ns
-      srcContent <- srcContentReactive()
-      selectedCellLineSet <- input$cellLineSet
-      data <-
-        srcContent[[selectedCellLineSet]][["molPharmData"]][[prefix]]
-
-      reactiveData(data)
-      tissueToSampleMap <-
-        srcContent[[selectedCellLineSet]][["tissueToSamplesMap"]]
-      reactiveTissueToSampleMap(tissueToSampleMap)
-
-      tissueNames <- names(tissueToSampleMap)
-      cellLines <- as.list(colnames(data))
-
-      updateSelectizeInput(session, "selectCellLine",
-                           choices = c("", cellLines))
-      updateSelectizeInput(session, "selectTissue",
-                           choices = c("", tissueNames))
-    })
-
-    observeEvent(input$selectNode,  ignoreInit = TRUE, {
-      forNodes <- pathwaysList[[input$selectPathway]][[1]]
-      selectedNodeID <-
-        forNodes$NodeID[forNodes$NodeName == input$selectNode]
-      selectNodes(session, selectedNodeID)
-    })
-
-    observeEvent(input$fitSelected,  ignoreInit = TRUE, {
-      fitSelected(session, 100)
-    })
-
-    observeEvent(input$selectGene,  ignoreInit = TRUE, {
+    observeEvent(input$selectGene, {
       ns <- session$ns
       if (input$selectGene != "") {
         shinyjs::showElement("selectPathway")
@@ -305,7 +321,7 @@ pathwayAnalysis <- function(id, srcContentReactive) {
       }
     })
 
-    observeEvent(input$selectPathway, ignoreInit = TRUE, {
+    observeEvent(input$selectPathway, {
       if (input$selectPathway != "" &
           input$selectPathway != "No Pathway exists") {
         shinyjs::showElement("options")
@@ -318,8 +334,8 @@ pathwayAnalysis <- function(id, srcContentReactive) {
       }
     })
 
-    observeEvent(input$selectCellLine, ignoreInit = TRUE, {
-      if (input$selectCellLine != "") {
+    observeEvent(input$selectCellLine,ignoreInit = TRUE,ignoreNULL = TRUE, {
+      if (input$selectCellLine != "" && !is.null(input$selectPathway)) {
         selectedCellLine <- input$selectCellLine
         if (input$selectPathway != "No Pathway exists") {
           averages <- displayTable(selectedCellLine)
@@ -330,7 +346,7 @@ pathwayAnalysis <- function(id, srcContentReactive) {
       }
     })
 
-    observeEvent(input$selectTissue, ignoreInit = TRUE, {
+    observeEvent(input$selectTissue, {
       if (input$selectTissue != "") {
         selectedTissue <- input$selectTissue
         tissueToSampleMap <- reactiveTissueToSampleMap()
@@ -363,6 +379,14 @@ pathwayAnalysis <- function(id, srcContentReactive) {
       displayGraph(averageValues, sliderValues[1], sliderValues[2])
     })
 
+    output$fileInputUI <- renderUI({
+      ns <- session$ns
+      if (input$selectPathwaySource == "Upload Pathway") {
+        fileInput(ns("file"), "Upload PathwayMapper.com File")
+      } else {
+        NULL
+      }
+    })
     # Event handler for file upload
     observeEvent(input$file, {
       ns <- session$ns
@@ -447,11 +471,56 @@ pathwayAnalysis <- function(id, srcContentReactive) {
               choices = c(fileName),
               selected = fileName
             )
+            
+            # Remove extension .txt from filename
+            fileName <- sub("\\.txt$", "", fileName)
+            # Construct the tab-delimited JSON format for nodeData
+            nodeDataJson <- c(
+              "--NODE_NAME\tNODE_ID\tNODE_TYPE\tPARENT_ID\tPOSX\tPOSY--",
+              paste(nodeDfPathway$NodeName, nodeDfPathway$NodeID, nodeDfPathway$NodeType,
+                    nodeDfPathway$ParentId, nodeDfPathway$PosX, nodeDfPathway$PosY, sep = "\t"),
+              ""
+            )
+            
+            # Construct the tab-delimited JSON format for edgeData
+            edgeDataJson <- c(
+              "--EDGE_ID\tSOURCE\tTARGET\tEDGE_TYPE",
+              paste(edgeDfPathway$EdgeID, edgeDfPathway$Source, edgeDfPathway$Target,
+                    edgeDfPathway$EdgeType, sep = "\t"),
+              ""
+            )
+            
+            # Combine the nodeData and edgeData JSON formats
+            combinedDataJson <- c(nodeDataJson, edgeDataJson, "")
+            
+            # Create a named list with filename as key and combinedDataJson as value
+            pathwayJsonList <- list()
+            pathwayJsonList[[fileName]] <- combinedDataJson
+            
+            # Write the named list to a JSON file
+            jsonlite::write_json(pathwayJsonList, "pathway_data.json", auto_unbox = TRUE)
+            
+            
             shinyjs::showElement("options")
 
           }
         }
       }
+    })
+    
+    observeEvent(input$selectNode,  ignoreInit = TRUE, {
+      forNodes <- pathwaysList[[input$selectPathway]][[1]]
+      selectedNodeID <-
+        forNodes$NodeID[forNodes$NodeName == input$selectNode]
+      selectNodes(session, selectedNodeID)
+    })
+    
+    observeEvent(input$fitSelected,  ignoreInit = TRUE, {
+      fitSelected(session, 100)
+    })
+    
+    observeEvent(input$fit, ignoreInit = TRUE, {
+      fit(session, 80)
     })
     })
 }

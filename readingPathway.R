@@ -6,14 +6,16 @@ pathwaysList <- list()
 # Initialize a vector to store all node names
 allNodeNames <- NULL
 
+pathwayGenesList <- list()
+
 #for demo pathways
-demoPathways <- c("Cell Cycle", "HIPPO", "MYC", "NOTCH", "WNT", "TP53",
-                  "NRF2", "PI3K", "RTK-RAS", "TGF-Beta")
+#demoPathways <- c("Cell Cycle", "HIPPO", "MYC", "NOTCH", "WNT", "TP53",
+ #                 "NRF2", "PI3K", "RTK-RAS", "TGF-Beta")
 # Loop through each pathway
 
 for (pathway in pathways) {
   # Get the nodes and edges
-  if (!(pathway[1] %in% demoPathways)) next
+  #if (!(pathway[1] %in% demoPathways)) next
 
   node1 <- pathway[grep("--NODE_NAME", pathway):grep("--EDGE_ID", pathway) - 1]
   edges <- pathway[grep("--EDGE_ID", pathway):length(pathway)]
@@ -46,10 +48,18 @@ for (pathway in pathways) {
 
   pathwaysList[[pathway[1]]] <- list(nodeDFPathway, edgeDFPathway)
   
-  # Filter nodes by NodeType "GENE"
-  geneNodes <- nodeDFPathway[nodeDFPathway$NodeType == "GENE", "NodeName"]
+  # Filter nodes by NodeType "GENE" and GENE name has no spaces 
+  # And all Uppercase 
+  geneNodes <- nodeDFPathway[
+    nodeDFPathway$NodeType == "GENE" &
+      !grepl(" ", nodeDFPathway$NodeName) &
+      toupper(nodeDFPathway$NodeName) == nodeDFPathway$NodeName,
+    "NodeName"
+  ]
   
   allNodeNames <- c(allNodeNames, geneNodes)
-}
+  # Store genes associated with the pathway in the list
+  pathwayGenesList[[pathway[1]]] <- geneNodes
+  }
 # Remove duplicates from the vector
 allNodeNames <- unique(allNodeNames)
