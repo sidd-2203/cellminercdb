@@ -1,15 +1,20 @@
 [
   {"selector":"node", "css": {
     "border-width": "2px",
-    "width": "data(size)",
-    "height": "data(size)", 
     "content": "data(name)",
-    "background-color":"white",
+    "background-color":"grey",
     "border-color":"black"
+  }},
+  {"selector":"node[avgValues <= 0]", "css": {
+       "background-color": "mapData(avgValues, -10, 0, blue, white)"
+  }},
+  {"selector":"node[avgValues > 0]", "css": {
+       "background-color": "mapData(avgValues, 0, 10, white, red)"
   }},
   
   {"selector":"node[nodeType = 'FAMILY']","css":{
-    "shape":"rectangle"
+    "shape":"rectangle",
+    "background-color":"white"
   }
   },
   {"selector":"node[nodeType = 'GENE']","css":{
@@ -18,19 +23,15 @@
   },
   {"selector":"node[nodeType = 'COMPARTMENT']","css":{
     "shape":"barrel",
-    "border-width":"4px" 
+    "border-width":"4px",
+    "background-color":"white" 
   }
   },
   {"selector":"node[nodeType = 'COMPLEX']","css":{
-    "shape":"cut-rectangle"
+    "shape":"cut-rectangle",
+    "background-color":"white"
   }},
-
-  {"selector":"node[avgValues <= 0]", "css": {
-       "background-color": "mapData(avgValues, -10, 0, blue, white)"
-  }},
-  {"selector":"node[avgValues > 0]", "css": {
-       "background-color": "mapData(avgValues, 0, 10, white, red)"
-  }},
+  
   
   {"selector": "node:selected", "css": {
        "overlay-opacity": 0.6,

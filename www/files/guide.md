@@ -18,6 +18,7 @@ output: html_document
   - [Partial correlations](#partialcorr)
   - [Exploratory workflow](#workflow)
 - [Analysis by Pathway](#pathways)
+  - [Pathway Input](#inputsTopathway)
 -	[Metadata](#metadata)
 - [Search IDs](#search)
       - [Drug IDs](#drugid)
@@ -205,11 +206,15 @@ Mutilple data analysis workflows may be used dependent of the question being ask
 <h2 id="pathways">Analysis By Pathway</h2>
 This module is designed to visualize the genetic pathways on the profiling data. Currently, it is a demo and has 10 TCGA pathways. All the inputs are on the sidebar panel and the pathway will be visualized on the main panel on the right side.
 
+![Screenshot of CellMinerCDB Application](files/pathway_network1.jpeg)
+
+**Figure**: Shows a sample pathway Analysis of RTK-RAS pathway on a cell line.
+
 <h4 id="inputsTopathway">Input Data</h4>
 1. **CellLineSet** selects the data source. The user can choose NCI60, CCLE, GDSC, CTRP, or NCI/DTP SCLC (see Data Sources for more details).
-2. **Select Pathway** offers two options for selecting a pathway: using a gene or uploading a pathway.
+2. **Select Pathway Source** offers two options for selecting a pathway: Use a Built in pathway list  or uploading a pathway.
    - Using **Upload Pathway**, you can visualize any pathway drawn on pathwaymapper.org. An example file can be found in the project repository. Upload the pathway and select the cell line or tissue.
-   - Using **Select using Gene**, you can choose from a list of genes available in any of the pathways in the list.
+   - Using **Use Built-in Pathway List**, you can choose from a list of genes available from any of the pathways in the list.
 3. **Select Gene** provides a list of genes available in at least one of the pathways.
 4. **Select Pathway** shows the list of pathways that include the selected gene or have the name of the uploaded pathway.
 5. **Select Cell Line or Tissue** offers two options for selecting cell lines or tissues to visualize the pathway:
@@ -238,7 +243,7 @@ The **Main Panel** displays the network with the following properties:
     - *Gene* is represented by a *Rounded Rectangle*
     - *Compartment* is represented by a *Barrel*
     - *Complex* is represented by a *Cut Rectangle*
-
+    
 
 
 <h2 id="metadata">Metadata</h2>
