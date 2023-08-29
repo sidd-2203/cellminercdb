@@ -18,7 +18,7 @@ output: html_document
   - [Partial correlations](#partialcorr)
   - [Exploratory workflow](#workflow)
 - [Analysis by Pathway](#pathways)
-  - [Pathway Input](#inputsTopathway)
+  - [Input Data](#inputsTopathway)
 -	[Metadata](#metadata)
 - [Search IDs](#search)
       - [Drug IDs](#drugid)
