@@ -245,7 +245,17 @@ The **Main Panel** displays the network with the following properties:
     - *Gene* is represented by a *Rounded Rectangle*
     - *Compartment* is represented by a *Barrel*
     - *Complex* is represented by a *Cut Rectangle*
-    
+
+<h4 id="Pathway Mapper">Pathway Mapper</h4>
+PathwayMapper is a web-based pathway curation tool for the interactive creation, editing, and sharing of cancer pathways. The tool supports remote users to collaborate and concurrently modify pathways.
+
+Here is a quick help to it:
+- To add a node: Drag and drop from the node palette
+- To add an interaction: Click on interaction type; then click on the small circle on the source node and release on the target node
+- To add a node into a container (family, complex, compartment, or process): Drag the node into its container node or select nodes to be contained and right-click on the container node and choose "Add Selected Into This"
+- To delete nodes/interactions: Select and perform Edit > Delete Selected.
+
+<a href="https://www.pathwaymapper.org/#" target="_blank">Link to Pathwaymapper.org</a>    
 
 
 <h2 id="metadata">Metadata</h2>
