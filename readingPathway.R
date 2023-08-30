@@ -1,3 +1,6 @@
+# Used this File to create a pathway list from the json file
+# Read this file in global.R
+
 library(jsonlite)
 # Read the JSON file
 pathways <- jsonlite::fromJSON("pathways.json")

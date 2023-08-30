@@ -174,23 +174,7 @@ pathwayAnalysis <- function(id, srcContentReactive) {
         }
       }
       
-#-----------------------[FGSEA Start]---------------------------
-      # Remove elements with NA values
-      # namedMean <- reactiveMean()
-      # 
-      # examplePathways <- list()
-      # examplePathways[[input$selectPathway]] <- namesOfNodes
-      # fgseaRes <- fgsea(pathways = examplePathways[1],
-      #                   stats    = namedMean,
-      #                   minSize  = 3,
-      #                   maxSize  = 500,
-      #                   nperm = 100)
-      # 
-      # output$gseaText <-renderText({
-      #   paste0("Adjusted p-Value: ",round(fgseaRes$padj,5))
-      # })
-      
-#-----------------[FGSEA End]---------------------------------------
+
 
       reactiveAverage(tableValuesAverages)
       maxVal <- max(c(tableValuesAverages, 0.0001), na.rm = TRUE)
@@ -314,17 +298,12 @@ pathwayAnalysis <- function(id, srcContentReactive) {
         }
         pathwayChoices <- unique(pathwayChoices)
         updateSelectInput(session, "selectPathway", choices = pathwayChoices)
-        if (length(pathwayChoices) == 0) {
-          updateSelectInput(session, "selectPathway",
-                            choices = "No Pathway exists")
-        }
         updateSelectInput(session, "selectGene", selected = input$selectGene)
       }
     })
 
     observeEvent(input$selectPathway, {
-      if (input$selectPathway != "" &
-          input$selectPathway != "No Pathway exists") {
+      if (input$selectPathway != "") {
         shinyjs::showElement("options")
         pathwaysList <- reactiveDfList()
         namesOfNodes <- pathwaysList[[input$selectPathway]][[1]][["NodeName"]]
@@ -332,18 +311,48 @@ pathwayAnalysis <- function(id, srcContentReactive) {
                           selected = input$selectPathway)
         updateSelectInput(session, "selectNode",
                           choices = c("", namesOfNodes))
+        
+        if(!is.null(input$selectCellLine) && input$selectCellLine!="")
+        {
+          cellLine <- input$selectCellLine
+          updateSelectizeInput(session,"selectCellLine",selected="")
+          updateSelectizeInput(session,"selectCellLine",selected=cellLine)
+        }
+        if(!is.null(input$selectTissue) && input$selectTissue!="")
+        {
+          tissue <- input$selectTissue
+          updateSelectizeInput(session,"selectTissue",selected="")
+          updateSelectizeInput(session,"selectTissue",selected=tissue)
+        }
+        
+        
+        #-----------------------[FGSEA Start]---------------------------
+        namedMean <- reactiveMean()
+
+        examplePathways <- list()
+        examplePathways[[input$selectPathway]] <- namesOfNodes
+        fgseaRes <- fgsea(pathways = examplePathways[1],
+                          stats    = namedMean,
+                          minSize  = 3,
+                          maxSize  = 500,
+                          nperm = 1000)
+
+        output$gseaText <-renderText({
+          paste0("Adjusted p-Value: ",round(fgseaRes$padj,5))
+        })
+        
+        #-----------------[FGSEA End]---------------------------------------
       }
     })
 
-    observeEvent(input$selectCellLine,ignoreInit = TRUE,ignoreNULL = TRUE, {
-      if (input$selectCellLine != "" && !is.null(input$selectPathway)) {
+    observeEvent(input$selectCellLine, {
+      if (input$selectPathway != "" && !is.null(input$selectPathway) &&
+          input$selectCellLine != "") {
         selectedCellLine <- input$selectCellLine
-        if (input$selectPathway != "No Pathway exists") {
-          averages <- displayTable(selectedCellLine)
-          maxVal <- max(c(averages, 0.0), na.rm = TRUE)
-          minVal <- min(c(averages, 0.0), na.rm = TRUE)
-          displayGraph(averages, maxVal, minVal)
-        }
+        averages <- displayTable(selectedCellLine)
+        maxVal <- max(c(averages, 0.0), na.rm = TRUE)
+        minVal <- min(c(averages, 0.0), na.rm = TRUE)
+        displayGraph(averages, maxVal, minVal)
       }
     })
 
