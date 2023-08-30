@@ -246,7 +246,7 @@ The **Main Panel** displays the network with the following properties:
     - *Compartment* is represented by a *Barrel*
     - *Complex* is represented by a *Cut Rectangle*
 
-![Screenshot of CellMinerCDB Application](pathway_network1.png)
+![Screenshot of CellMinerCDB Application](pathway_network2.png)
 
 **Figure**: Shows a representation of each type node and interaction in the network.
 
