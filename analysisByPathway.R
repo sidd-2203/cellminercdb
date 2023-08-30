@@ -3,20 +3,9 @@
 # Before using this module, please make sure to execute the
 # buildSrcContent.R or the readingPathway.R file to initialize the necessary variables:
 # allNodeNames and pathwaysList
-  
-#data(examplePathways)
-# data(exampleRanks)
-# 
-#type(examplePathways)
-# exampleRanks
-# fgseaRes <- fgsea(pathways = examplePathways[1], 
-#                   stats    = exampleRanks,
-#                   minSize  = 3,
-#                   maxSize  = 500, 
-#                   nperm = 10)
-# 
-# 
-# fgseaRes
+
+#  Make sure to include the shinyjs package and enable it. 
+#  Refer line 8 and 96 in ui.R
 
 
 #------[NavBar Tab: Analysis by pathway (UI code)]-----------------------------
@@ -55,7 +44,7 @@ analysisByPathwayInput <- function(id,dataSourceChoices) {
                  shinyjs::hidden(selectInput(
                    ns("options"),
                    "Select Cell Line or Tissue",
-                   c("","Cell line", "Tissue")
+                   c("Cell line", "Tissue")
                  )),
 
                  conditionalPanel(
@@ -82,8 +71,9 @@ analysisByPathwayInput <- function(id,dataSourceChoices) {
                  width = 3,
                ),
                mainPanel(
-                 textOutput("gseaText"),  
+                 textOutput(ns("gseaText")),  
                  cyjShinyOutput(ns("cyjShiny"), height = 800), 
+                 imageOutput(ns("notationLegend"))
                  )
              ) # sidebarLayout
            )) #end tabPane
@@ -98,6 +88,7 @@ pathwayAnalysis <- function(id, srcContentReactive) {
     reactiveAverage <- reactiveVal()
     reactiveDfList <- reactiveVal(pathwaysList)
     reactiveTissueToSampleMap <- reactiveVal()
+    reactiveMean <- reactiveVal()
 
     displayGraph <- function(averageValues, minVal, maxVal) {
       pathwaysList <- reactiveDfList()
@@ -144,6 +135,11 @@ pathwayAnalysis <- function(id, srcContentReactive) {
       })
 
       displayColorPlot(minVal, maxVal)
+      
+      output$notationLegend <- renderImage({
+        list(src="www/files/pathway_network2.png",
+             alt="Network Notation")
+      },deleteFile=FALSE)
     }
 
     displayTable <- function(selectedCells) {
@@ -178,25 +174,23 @@ pathwayAnalysis <- function(id, srcContentReactive) {
         }
       }
       
-      # Assuming namesOfNodes and tableValuesAverages are already defined
-      # namedMean <- setNames(tableValuesAverages, namesOfNodes)
-      # # Remove elements with NA values
-      # namedMean <- namedMean[!is.na(namedMean)]
+#-----------------------[FGSEA Start]---------------------------
+      # Remove elements with NA values
+      # namedMean <- reactiveMean()
       # 
       # examplePathways <- list()
-      # examplePathways[[input$selectPathway]] <- names(namedMean)
-      # 
-      # print(namedMean)
-      # print(examplePathways[1])
-      # 
+      # examplePathways[[input$selectPathway]] <- namesOfNodes
       # fgseaRes <- fgsea(pathways = examplePathways[1],
       #                   stats    = namedMean,
       #                   minSize  = 3,
       #                   maxSize  = 500,
-      #                   nperm = 10)
+      #                   nperm = 100)
+      # 
       # output$gseaText <-renderText({
-      #   paste0()
+      #   paste0("Adjusted p-Value: ",round(fgseaRes$padj,5))
       # })
+      
+#-----------------[FGSEA End]---------------------------------------
 
       reactiveAverage(tableValuesAverages)
       maxVal <- max(c(tableValuesAverages, 0.0001), na.rm = TRUE)
@@ -261,12 +255,19 @@ pathwayAnalysis <- function(id, srcContentReactive) {
       })
     }
 
+    
+    
     observeEvent(input$cellLineSet, {
       ns <- session$ns
       srcContent <- srcContentReactive()
       selectedCellLineSet <- input$cellLineSet
       data <-
         srcContent[[selectedCellLineSet]][["molPharmData"]][[prefix]]
+      
+      eachRowMeans <- rowMeans(data)
+      rowNames <- sub(paste0("^",prefix),"",row.names(data))
+      namedMean <- setNames(eachRowMeans,rowNames)
+      reactiveMean(namedMean)
       
       reactiveData(data)
       tissueToSampleMap <-
@@ -398,11 +399,12 @@ pathwayAnalysis <- function(id, srcContentReactive) {
         # Initialize empty vectors for nodes and edges
         nodeLines <- NULL
         edgeLines <- NULL
+        nameOfPathway <- NULL
         # Find the lines containing node and edge information
         if (length(data) > 0) {
           nodeLineStart <- NA
           edgeLineStart <- NA
-
+          nameOfPathway <- data[1]
           for (index in seq_along(data)) {
             line <- data[index]
             if (grepl("--NODE_NAME", line)) {
@@ -420,21 +422,20 @@ pathwayAnalysis <- function(id, srcContentReactive) {
             edgeData <- paste(edgeLines, collapse = "\t")
             nodefields <- strsplit(nodeData, "\t")
             edgesfields <- strsplit(edgeData, "\t")
-
-            nodeDfPathway <-
+            nodeDf <-
               data.frame(matrix(
                 unlist(nodefields),
                 ncol = 8,
                 byrow = TRUE
               ))
-            edgeDfPathway <-
+            edgeDf <-
               data.frame(matrix(
                 unlist(edgesfields),
                 ncol = 8,
                 byrow = TRUE
               ))
 
-            colnames(nodeDfPathway) <-
+            colnames(nodeDf) <-
               c(
                 "NodeName",
                 "NodeID",
@@ -446,9 +447,9 @@ pathwayAnalysis <- function(id, srcContentReactive) {
                 "Height"
               )
             # Convert PosX and PosY columns to numeric data type
-            nodeDfPathway$PosX <- as.double(nodeDfPathway$PosX)
-            nodeDfPathway$PosY <- as.double(nodeDfPathway$PosY)
-            colnames(edgeDfPathway) <-
+            nodeDf$PosX <- as.double(nodeDf$PosX)
+            nodeDf$PosY <- as.double(nodeDf$PosY)
+            colnames(edgeDf) <-
               c(
                 "EdgeID",
                 "Source",
@@ -460,47 +461,45 @@ pathwayAnalysis <- function(id, srcContentReactive) {
                 "Curve"
               )
             pathwaysList <- reactiveDfList()
-            fileName <- input$file$name
-            pathwaysList[[fileName]] <-
-              list(nodeDfPathway, edgeDfPathway)
+            pathwaysList[[nameOfPathway]] <-
+              list(nodeDf, edgeDf)
             reactiveDfList(pathwaysList)
             shinyjs::showElement("selectPathway")
             updateSelectInput(
               session,
               "selectPathway",
-              choices = c(fileName),
-              selected = fileName
+              choices = nameOfPathway,
+              selected = nameOfPathway
             )
+  
+# ----------------[CODE TO CREATE A JSON FILE FOR ADDING NEW PATHWAY]----------
             
-            # Remove extension .txt from filename
-            fileName <- sub("\\.txt$", "", fileName)
-            # Construct the tab-delimited JSON format for nodeData
-            nodeDataJson <- c(
-              "--NODE_NAME\tNODE_ID\tNODE_TYPE\tPARENT_ID\tPOSX\tPOSY--",
-              paste(nodeDfPathway$NodeName, nodeDfPathway$NodeID, nodeDfPathway$NodeType,
-                    nodeDfPathway$ParentId, nodeDfPathway$PosX, nodeDfPathway$PosY, sep = "\t"),
-              ""
-            )
+            # Construct the tab-delimited JSON format for node Data
+          nodeDataJson <- c(
+           "--NODE_NAME\tNODE_ID\tNODE_TYPE\tPARENT_ID\tPOSX\tPOSY--",
+          paste(nodeDf$NodeName, nodeDf$NodeID, nodeDf$NodeType,
+                 nodeDf$ParentId, nodeDf$PosX, nodeDf$PosY, sep = "\t"),
+            ""
+           )
+             # Construct the tab-delimited JSON format for edge Data
+             edgeDataJson <- c(
+             "--EDGE_ID\tSOURCE\tTARGET\tEDGE_TYPE",
+             paste(edgeDf$EdgeID, edgeDf$Source, edgeDf$Target,
+                   edgeDf$EdgeType, sep = "\t")
+             )
+
+             # Combine the nodeData and edgeData JSON formats
+            combinedDataJson <- c(nameOfPathway,"",nodeDataJson, edgeDataJson, "")
             
-            # Construct the tab-delimited JSON format for edgeData
-            edgeDataJson <- c(
-              "--EDGE_ID\tSOURCE\tTARGET\tEDGE_TYPE",
-              paste(edgeDfPathway$EdgeID, edgeDfPathway$Source, edgeDfPathway$Target,
-                    edgeDfPathway$EdgeType, sep = "\t"),
-              ""
-            )
-            
-            # Combine the nodeData and edgeData JSON formats
-            combinedDataJson <- c(nodeDataJson, edgeDataJson, "")
-            
-            # Create a named list with filename as key and combinedDataJson as value
-            pathwayJsonList <- list()
-            pathwayJsonList[[fileName]] <- combinedDataJson
+             # Create a named list with filename as key and combinedDataJson as value
+             pathwayJsonList <- list()
+             pathwayJsonList[[nameOfPathway]] <- combinedDataJson
             
             # Write the named list to a JSON file
-            jsonlite::write_json(pathwayJsonList, "pathway_data.json", auto_unbox = TRUE)
+            jsonlite::write_json(pathwayJsonList, "pathwayData.json", auto_unbox=TRUE)
             
-            
+#----------------[CODE FOR PATHWAY ADDITION ENDS]---------------------
+
             shinyjs::showElement("options")
 
           }

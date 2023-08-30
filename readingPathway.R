@@ -17,11 +17,11 @@ for (pathway in pathways) {
   # Get the nodes and edges
   #if (!(pathway[1] %in% demoPathways)) next
 
-  node1 <- pathway[grep("--NODE_NAME", pathway):grep("--EDGE_ID", pathway) - 1]
+  nodes <- pathway[grep("--NODE_NAME", pathway):grep("--EDGE_ID", pathway) - 1]
   edges <- pathway[grep("--EDGE_ID", pathway):length(pathway)]
 
   # Split nodes and edges on "\t" delimiter
-  nodefields <- strsplit(node1, "\t")
+  nodefields <- strsplit(nodes, "\t")
   edgesfields <- strsplit(edges, "\t")
   nodeDFPathway <- data.frame(matrix(unlist(nodefields),
                                             ncol = 6, byrow = TRUE))
@@ -56,7 +56,7 @@ for (pathway in pathways) {
       toupper(nodeDFPathway$NodeName) == nodeDFPathway$NodeName,
     "NodeName"
   ]
-  
+    
   allNodeNames <- c(allNodeNames, geneNodes)
   # Store genes associated with the pathway in the list
   pathwayGenesList[[pathway[1]]] <- geneNodes

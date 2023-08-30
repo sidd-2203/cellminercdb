@@ -255,7 +255,7 @@ shinyUI(
 						 				br(),br()
 						 				#uiOutput(""),
 						 			)
-						 		), #end sidebarPanel
+					 		), #end sidebarPanel
 						 		mainPanel(
 						 		  # htmlOutput('sourceLink'),
 						 		  uiOutput('sourceLink'),

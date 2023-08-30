@@ -698,7 +698,7 @@ shinyServer(function(input, output, session) {
 		g1 <- ggplotly(p1, width=plotWidth, height=plotHeight, tooltip=tooltipCol)
 		#g1 <- layout(g1, margin=list(t = 75))
 		g1 <- layout(g1, margin=list(t = 75), legend = list(font = list(size = 18)))
-		g2 <- config(p = g1, cloud=FALSE, displaylogo=FALSE, displayModeBar=TRUE,
+	g2 <- config(p = g1, cloud=FALSE, displaylogo=FALSE, displayModeBar=TRUE,
 								 modeBarButtonsToRemove=c("select2d", "sendDataToCloud", "pan2d", "resetScale2d",
 								 												 "hoverClosestCartesian", "hoverCompareCartesian",
 								 												 "lasso2d", "zoomIn2d", "zoomOut2d"))

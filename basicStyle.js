@@ -14,11 +14,16 @@
   
   {"selector":"node[nodeType = 'FAMILY']","css":{
     "shape":"rectangle",
-    "background-color":"white"
+    "background-color":"white",
+    "border-color":"grey"
   }
   },
   {"selector":"node[nodeType = 'GENE']","css":{
     "shape":"round-rectangle"
+  }
+  },
+  {"selector":"node[nodeType = 'PROCESS']","css":{
+    "border-color":"white"
   }
   },
   {"selector":"node[nodeType = 'COMPARTMENT']","css":{

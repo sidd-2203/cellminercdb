@@ -245,8 +245,10 @@ The **Main Panel** displays the network with the following properties:
     - *Gene* is represented by a *Rounded Rectangle*
     - *Compartment* is represented by a *Barrel*
     - *Complex* is represented by a *Cut Rectangle*
-    
 
+![Screenshot of CellMinerCDB Application](pathway_network1.png)
+
+**Figure**: Shows a representation of each type node and interaction in the network.
 
 <h2 id="metadata">Metadata</h2>
 This option enumerates for each cell line set, the available data types that could be queried within the app providing the data type abbreviation or prefix, description, feature value unit (z-score, intensity, probability …), platform or experiment and related publication reference (pubmed). First the user should specify the **Cell Line Set** or data source to view all available associated data types. Then he can download data via: **Select Data Type to Download** and then click on **Download Data type** and/or **Download Data Footnotes** to download any data or footnotes for the selected cell line set. Finally the user has the option to **Download current cell line set information** and **Download drug synonyms table with matching IDs for all cell line sets** by clicking respectively on **Download cell line annotation** and **Download table**.
