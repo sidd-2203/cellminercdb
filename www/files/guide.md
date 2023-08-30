@@ -18,7 +18,7 @@ output: html_document
   - [Partial correlations](#partialcorr)
   - [Exploratory workflow](#workflow)
 - [Analysis by Pathway](#pathways)
-  - [Pathway Input](#inputsTopathway)
+  - [Input Data](#inputsTopathway)
 -	[Metadata](#metadata)
 - [Search IDs](#search)
       - [Drug IDs](#drugid)
@@ -249,6 +249,19 @@ The **Main Panel** displays the network with the following properties:
 ![Screenshot of CellMinerCDB Application](pathway_network1.png)
 
 **Figure**: Shows a representation of each type node and interaction in the network.
+
+
+<h4 id="Pathway Mapper">Pathway Mapper</h4>
+PathwayMapper is a web-based pathway curation tool for the interactive creation, editing, and sharing of cancer pathways. The tool supports remote users to collaborate and concurrently modify pathways.
+
+Here is a quick help to it:
+- To add a node: Drag and drop from the node palette
+- To add an interaction: Click on interaction type; then click on the small circle on the source node and release on the target node
+- To add a node into a container (family, complex, compartment, or process): Drag the node into its container node or select nodes to be contained and right-click on the container node and choose "Add Selected Into This"
+- To delete nodes/interactions: Select and perform Edit > Delete Selected.
+
+<a href="https://www.pathwaymapper.org/#" target="_blank">Link to Pathwaymapper.org</a>    
+  
 
 <h2 id="metadata">Metadata</h2>
 This option enumerates for each cell line set, the available data types that could be queried within the app providing the data type abbreviation or prefix, description, feature value unit (z-score, intensity, probability …), platform or experiment and related publication reference (pubmed). First the user should specify the **Cell Line Set** or data source to view all available associated data types. Then he can download data via: **Select Data Type to Download** and then click on **Download Data type** and/or **Download Data Footnotes** to download any data or footnotes for the selected cell line set. Finally the user has the option to **Download current cell line set information** and **Download drug synonyms table with matching IDs for all cell line sets** by clicking respectively on **Download cell line annotation** and **Download table**.
