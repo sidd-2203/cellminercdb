@@ -3,7 +3,7 @@
 
 library(jsonlite)
 # Read the JSON file
-pathways <- jsonlite::fromJSON("pathways.json")
+pathways <- jsonlite::fromJSON("pathway_as_json.json")
 pathwaysList <- list()
 
 # Initialize a vector to store all node names
@@ -27,14 +27,16 @@ for (pathway in pathways) {
   nodefields <- strsplit(nodes, "\t")
   edgesfields <- strsplit(edges, "\t")
   nodeDFPathway <- data.frame(matrix(unlist(nodefields),
-                                            ncol = 6, byrow = TRUE))
+                                            ncol = 8, byrow = TRUE))
   edgeDFPathway <- data.frame(matrix(unlist(edgesfields),
-                                            ncol = 4, byrow = TRUE))
+                                            ncol = 8, byrow = TRUE))
 
   colnames(nodeDFPathway) <- c("NodeName", "NodeID", "NodeType",
-                               "ParentId", "PosX", "PosY")
+                               "ParentId", "PosX", "PosY","Width","Height")
 
-  colnames(edgeDFPathway) <- c("EdgeID", "Source", "Target", "EdgeType")
+  colnames(edgeDFPathway) <- c("EdgeID", "Source", "Target", "EdgeType",
+                               "Interaction", "EdgeName",
+                               "EdgeBends", "EdgeCurveStyle")
   # Remove empty rows
   nodeDFPathway <- nodeDFPathway[rowSums(nodeDFPathway == "")
                                  != ncol(nodeDFPathway), ]

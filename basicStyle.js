@@ -23,7 +23,10 @@
   }
   },
   {"selector":"node[nodeType = 'PROCESS']","css":{
-    "border-color":"white"
+    "border-color":"white",
+    "background-color":"white",
+    "text-halign":"center",
+    "text-valign":"center"
   }
   },
   {"selector":"node[nodeType = 'COMPARTMENT']","css":{

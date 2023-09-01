@@ -152,7 +152,8 @@ pathwayAnalysis <- function(id, srcContentReactive) {
       names <- as.list(row.names(data))
       tableValuesAverages <- NULL
       tableValuesMedians <- NULL
-
+      
+      
       for (nodeName in namesOfNodes) {
         # Construct the name of the gene in the "xsq" data frame
         nameInData <- paste0(prefix, nodeName)
@@ -174,8 +175,6 @@ pathwayAnalysis <- function(id, srcContentReactive) {
         }
       }
       
-
-
       reactiveAverage(tableValuesAverages)
       maxVal <- max(c(tableValuesAverages, 0.0001), na.rm = TRUE)
       minVal <- min(c(tableValuesAverages, -0.0001), na.rm = TRUE)
@@ -197,7 +196,9 @@ pathwayAnalysis <- function(id, srcContentReactive) {
       output$nodeDatatable <- renderDataTable({
         datatable(tableValuesDataFrame)
       })
-
+      # Display Table and Display Graph both are trying to render the Range slider
+      # So first slider is rendered by display table and then display graph
+      # So the blink is observed in the graph
       if (length(tableValuesAverages) > 1) {
         shinyjs::showElement("rangeSliderUI")
         output$rangeSliderUI <- renderUI({
@@ -336,6 +337,7 @@ pathwayAnalysis <- function(id, srcContentReactive) {
                           minSize  = 3,
                           maxSize  = 500,
                           nperm = 1000)
+        print(fgseaRes)
 
         output$gseaText <-renderText({
           paste0("Adjusted p-Value: ",round(fgseaRes$padj,5))
@@ -344,12 +346,32 @@ pathwayAnalysis <- function(id, srcContentReactive) {
         #-----------------[FGSEA End]---------------------------------------
       }
     })
-
+    
+    observeEvent(input$options,{
+      if(input$options == 'Cell Line'){
+        if(!is.null(input$selectCellLine) && input$selectCellLine!="")
+        {
+          cellLine <- input$selectCellLine
+          updateSelectizeInput(session,"selectCellLine",selected="")
+          updateSelectizeInput(session,"selectCellLine",selected=cellLine)
+        }
+      }
+      else{
+        if(!is.null(input$selectTissue) && input$selectTissue!="")
+        {
+          tissue <- input$selectTissue
+          updateSelectizeInput(session,"selectTissue",selected="")
+          updateSelectizeInput(session,"selectTissue",selected=tissue)
+        }
+      }
+    })
+    
     observeEvent(input$selectCellLine, {
       if (input$selectPathway != "" && !is.null(input$selectPathway) &&
           input$selectCellLine != "") {
         selectedCellLine <- input$selectCellLine
         averages <- displayTable(selectedCellLine)
+        
         maxVal <- max(c(averages, 0.0), na.rm = TRUE)
         minVal <- min(c(averages, 0.0), na.rm = TRUE)
         displayGraph(averages, maxVal, minVal)
@@ -366,7 +388,6 @@ pathwayAnalysis <- function(id, srcContentReactive) {
           unlist(selectedCellLines, use.names = FALSE)
 
         averages <- displayTable(selectedCellLines)
-        reactiveAverage(averages)
         maxVal <- max(c(averages, 0.0), na.rm = TRUE)
         minVal <- min(c(averages, 0.0), na.rm = TRUE)
         displayGraph(averages, minVal, maxVal)
@@ -480,34 +501,6 @@ pathwayAnalysis <- function(id, srcContentReactive) {
               choices = nameOfPathway,
               selected = nameOfPathway
             )
-  
-# ----------------[CODE TO CREATE A JSON FILE FOR ADDING NEW PATHWAY]----------
-            
-            # Construct the tab-delimited JSON format for node Data
-          nodeDataJson <- c(
-           "--NODE_NAME\tNODE_ID\tNODE_TYPE\tPARENT_ID\tPOSX\tPOSY--",
-          paste(nodeDf$NodeName, nodeDf$NodeID, nodeDf$NodeType,
-                 nodeDf$ParentId, nodeDf$PosX, nodeDf$PosY, sep = "\t"),
-            ""
-           )
-             # Construct the tab-delimited JSON format for edge Data
-             edgeDataJson <- c(
-             "--EDGE_ID\tSOURCE\tTARGET\tEDGE_TYPE",
-             paste(edgeDf$EdgeID, edgeDf$Source, edgeDf$Target,
-                   edgeDf$EdgeType, sep = "\t")
-             )
-
-             # Combine the nodeData and edgeData JSON formats
-            combinedDataJson <- c(nameOfPathway,"",nodeDataJson, edgeDataJson, "")
-            
-             # Create a named list with filename as key and combinedDataJson as value
-             pathwayJsonList <- list()
-             pathwayJsonList[[nameOfPathway]] <- combinedDataJson
-            
-            # Write the named list to a JSON file
-            jsonlite::write_json(pathwayJsonList, "pathwayData.json", auto_unbox=TRUE)
-            
-#----------------[CODE FOR PATHWAY ADDITION ENDS]---------------------
 
             shinyjs::showElement("options")
 
@@ -515,7 +508,7 @@ pathwayAnalysis <- function(id, srcContentReactive) {
         }
       }
     })
-    
+      
     observeEvent(input$selectNode,  ignoreInit = TRUE, {
       forNodes <- pathwaysList[[input$selectPathway]][[1]]
       selectedNodeID <-
