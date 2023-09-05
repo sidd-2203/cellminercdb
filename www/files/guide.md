@@ -260,6 +260,8 @@ Here is a quick help to it:
 - To add a node into a container (family, complex, compartment, or process): Drag the node into its container node or select nodes to be contained and right-click on the container node and choose "Add Selected Into This"
 - To delete nodes/interactions: Select and perform Edit > Delete Selected.
 
+**Note:** For custom pathways you upload, make sure pathway members use official gene symbols; these are typically uppercase (e.g., TP53 and not tp53).
+
 <a href="https://www.pathwaymapper.org/#" target="_blank">Link to Pathwaymapper.org</a>    
   
 

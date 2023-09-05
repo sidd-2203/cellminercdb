@@ -26,11 +26,6 @@ analysisByPathwayInput <- function(id,dataSourceChoices) {
                 
                  radioButtons(ns("selectPathwaySource"),"Select Pathway Source",
                               c("Use Built-in Pathway List","Upload Pathway")),
-                 # selectInput(
-                 #   ,
-                 #   "",
-                 #   c("", "Upload Pathway", "Select using Gene")
-                 # ),
                  conditionalPanel(
                    condition = paste0("input['", ns("selectPathwaySource"),
                                       "'] =='Use Built-in Pathway List'"),
