@@ -238,8 +238,8 @@ The **Main Panel** displays the network with the following properties:
     - Solid Red represents *INHIBITS*
     - Solid Green represents *ACTIVATES*
     - Black represents *BINDS*
-    - Dashed Green represents *INDUCES*
-    - Dashed Red represents *REPRESSES*
+    - Dashed Green represents *INDUCES* (Transcriptional Activation)
+    - Dashed Red represents *REPRESSES* (Transcriptional Inhibition)
   - Nodes (Compounds or Simple) are shaped according to their type:
     - *Family* is represented by a *Rectangle* 
     - *Gene* is represented by a *Rounded Rectangle*
