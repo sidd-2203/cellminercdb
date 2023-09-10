@@ -2,7 +2,7 @@
   {"selector":"node", "css": {
     "border-width": "2px",
     "content": "data(name)",
-    "background-color":"grey",
+    "background-color":"grey20",
     "border-color":"black"
   }},
   {"selector":"node[avgValues <= 0]", "css": {
@@ -15,7 +15,7 @@
   {"selector":"node[nodeType = 'FAMILY']","css":{
     "shape":"rectangle",
     "background-color":"white",
-    "border-color":"grey"
+    "border-color":"grey50"
   }
   },
   {"selector":"node[nodeType = 'GENE']","css":{

@@ -39,7 +39,7 @@ analysisByPathwayInput <- function(id,dataSourceChoices) {
                  shinyjs::hidden(selectInput(
                    ns("options"),
                    "Select Cell Line or Tissue",
-                   c("Cell line", "Tissue")
+                   c("Tissue","Cell line")
                  )),
 
                  conditionalPanel(
@@ -83,12 +83,15 @@ pathwayAnalysis <- function(id, srcContentReactive) {
     reactiveAverage <- reactiveVal()
     reactiveDfList <- reactiveVal(pathwaysList)
     reactiveTissueToSampleMap <- reactiveVal()
-    reactiveMean <- reactiveVal()
+    #reactiveMean <- reactiveVal()
 
     displayGraph <- function(averageValues, minVal, maxVal) {
+      #cat("Display Graph Entered\n")
       pathwaysList <- reactiveDfList()
+      
       forNodes <- pathwaysList[[input$selectPathway]][[1]]
       forEdges <- pathwaysList[[input$selectPathway]][[2]]
+      
       if (minVal == 0)
         minVal <- -0.0001
       if (maxVal == 0)
@@ -135,9 +138,31 @@ pathwayAnalysis <- function(id, srcContentReactive) {
         list(src="www/files/pathway_network2.png",
              alt="Network Notation")
       },deleteFile=FALSE)
+      
+      #-----------------------[FGSEA Start]---------------------------
+      #namedMean <- reactiveMean()
+      
+      # examplePathways <- list()
+      # examplePathways[[input$selectPathway]] <- namesOfNodes
+      # fgseaRes <- fgsea(pathways = examplePathways[1],
+      #                   stats    = averageValues,
+      #                   minSize  = 3,
+      #                   maxSize  = 500,
+      #                   nperm = 1000)
+      # print(fgseaRes)
+  
+      # output$gseaText <-renderText({
+      #   paste0("p-Value: ",round(fgseaRes$padj,5))
+      # })
+      
+      #-----------------[FGSEA End]---------------------------------------
+      
+      
+      #cat("Display Graph Out\n")
     }
 
     displayTable <- function(selectedCells) {
+      
       data <- reactiveData()
       cellLineData <- data[, selectedCells, drop = FALSE]
 
@@ -147,8 +172,7 @@ pathwayAnalysis <- function(id, srcContentReactive) {
       names <- as.list(row.names(data))
       tableValuesAverages <- NULL
       tableValuesMedians <- NULL
-      
-      
+
       for (nodeName in namesOfNodes) {
         # Construct the name of the gene in the "xsq" data frame
         nameInData <- paste0(prefix, nodeName)
@@ -191,21 +215,7 @@ pathwayAnalysis <- function(id, srcContentReactive) {
       output$nodeDatatable <- renderDataTable({
         datatable(tableValuesDataFrame)
       })
-      # Display Table and Display Graph both are trying to render the Range slider
-      # So first slider is rendered by display table and then display graph
-      # So the blink is observed in the graph
-      if (length(tableValuesAverages) > 1) {
-        shinyjs::showElement("rangeSliderUI")
-        output$rangeSliderUI <- renderUI({
-          sliderInput(
-            session$ns("rangeSlider"),
-            "Value Range",
-            min = minVal,
-            max = maxVal,
-            value = c(minVal, maxVal)
-          )
-        })
-      }
+      #cat("Display table Out\n")
       return(tableValuesAverages)
     }
 
@@ -234,20 +244,32 @@ pathwayAnalysis <- function(id, srcContentReactive) {
         )
       })
     }
-
     
+    displayRangeSlider <- function(averages, minVal, maxVal) {
+      shinyjs::showElement("rangeSliderUI")
+      output$rangeSliderUI <- renderUI({
+        sliderInput(
+          session$ns("rangeSlider"),
+          "Value Range",
+          min = minVal,
+          max = maxVal,
+          value = c(minVal, maxVal)
+        )
+      })
+    }
     
     observeEvent(input$cellLineSet, {
+     # cat("Entering Select Cell line set\n")
       ns <- session$ns
       srcContent <- srcContentReactive()
       selectedCellLineSet <- input$cellLineSet
       data <-
         srcContent[[selectedCellLineSet]][["molPharmData"]][[prefix]]
       
-      eachRowMeans <- rowMeans(data)
-      rowNames <- sub(paste0("^",prefix),"",row.names(data))
-      namedMean <- setNames(eachRowMeans,rowNames)
-      reactiveMean(namedMean)
+      # eachRowMeans <- rowMeans(data)
+      # rowNames <- sub(paste0("^",prefix),"",row.names(data))
+      # namedMean <- setNames(eachRowMeans,rowNames)
+      # reactiveMean(namedMean)
       
       reactiveData(data)
       tissueToSampleMap <-
@@ -258,10 +280,11 @@ pathwayAnalysis <- function(id, srcContentReactive) {
       cellLines <- as.list(colnames(data))
       
       updateSelectizeInput(session, "selectCellLine",
-                           choices =c("",cellLines))
+                           choices =cellLines)
       updateSelectizeInput(session, "selectTissue",
-                           choices = c("",tissueNames))
-    })
+                           choices = tissueNames)
+      #cat("Out Select Cell line set\n")
+      })
     
     observeEvent(input$selectPathwaySource,{
       srcContent <- srcContentReactive()
@@ -276,6 +299,7 @@ pathwayAnalysis <- function(id, srcContentReactive) {
     })
 
     observeEvent(input$selectGene, {
+      #cat("Entering Select Gene set\n")
       ns <- session$ns
       if (input$selectGene != "") {
         shinyjs::showElement("selectPathway")
@@ -295,10 +319,12 @@ pathwayAnalysis <- function(id, srcContentReactive) {
         pathwayChoices <- unique(pathwayChoices)
         updateSelectInput(session, "selectPathway", choices = pathwayChoices)
         updateSelectInput(session, "selectGene", selected = input$selectGene)
+        #cat("Out Select Gene set\n")
       }
     })
 
     observeEvent(input$selectPathway, {
+      #cat("Inside Select Pathway\n")
       if (input$selectPathway != "") {
         shinyjs::showElement("options")
         pathwaysList <- reactiveDfList()
@@ -321,29 +347,12 @@ pathwayAnalysis <- function(id, srcContentReactive) {
           updateSelectizeInput(session,"selectTissue",selected=tissue)
         }
         
-        
-        #-----------------------[FGSEA Start]---------------------------
-        namedMean <- reactiveMean()
-
-        examplePathways <- list()
-        examplePathways[[input$selectPathway]] <- namesOfNodes
-        fgseaRes <- fgsea(pathways = examplePathways[1],
-                          stats    = namedMean,
-                          minSize  = 3,
-                          maxSize  = 500,
-                          nperm = 1000)
-        print(fgseaRes)
-
-        output$gseaText <-renderText({
-          paste0("Adjusted p-Value: ",round(fgseaRes$padj,5))
-        })
-        
-        #-----------------[FGSEA End]---------------------------------------
       }
+      #cat("Going out of Select Pathway\n")
     })
     
     observeEvent(input$options,{
-      if(input$options == 'Cell Line'){
+      if(input$options == "Cell line"){
         if(!is.null(input$selectCellLine) && input$selectCellLine!="")
         {
           cellLine <- input$selectCellLine
@@ -361,19 +370,23 @@ pathwayAnalysis <- function(id, srcContentReactive) {
       }
     })
     
-    observeEvent(input$selectCellLine, {
+    observeEvent(input$selectCellLine,ignoreInit = TRUE,ignoreNULL = TRUE, {
+      #cat("Inside of Select Cell line\n")
       if (input$selectPathway != "" && !is.null(input$selectPathway) &&
           input$selectCellLine != "") {
         selectedCellLine <- input$selectCellLine
         averages <- displayTable(selectedCellLine)
-        
-        maxVal <- max(c(averages, 0.0), na.rm = TRUE)
-        minVal <- min(c(averages, 0.0), na.rm = TRUE)
-        displayGraph(averages, maxVal, minVal)
+        maxVal <- max(c(averages, 0.0001), na.rm = TRUE)
+        minVal <- min(c(averages, -0.0001), na.rm = TRUE)
+        # this will indirectly also call the display graph 
+        # when the range slider is set
+        displayRangeSlider(averages, minVal, maxVal)
       }
+      #cat("Going out of Select Cell line\n")
     })
 
-    observeEvent(input$selectTissue, {
+    observeEvent(input$selectTissue,ignoreInit = TRUE,ignoreNULL = TRUE, {
+      #cat("Inside of Select Tissue\n")
       if (input$selectTissue != "") {
         selectedTissue <- input$selectTissue
         tissueToSampleMap <- reactiveTissueToSampleMap()
@@ -383,13 +396,17 @@ pathwayAnalysis <- function(id, srcContentReactive) {
           unlist(selectedCellLines, use.names = FALSE)
 
         averages <- displayTable(selectedCellLines)
-        maxVal <- max(c(averages, 0.0), na.rm = TRUE)
-        minVal <- min(c(averages, 0.0), na.rm = TRUE)
-        displayGraph(averages, minVal, maxVal)
+        maxVal <- max(c(averages, 0.0001), na.rm = TRUE)
+        minVal <- min(c(averages, -0.0001), na.rm = TRUE)
+        # this will indirectly also call the display graph 
+        # when the range slider is set
+        displayRangeSlider(averages, minVal, maxVal) 
       }
+      #cat("Going out of Select Tissue\n")
     })
 
-    observeEvent(input$rangeSlider, {
+    observeEvent(input$rangeSlider,ignoreInit = TRUE,{
+      #cat("Inside range Slider\n")
       sliderValues <- input$rangeSlider
       #setting condition that first slider cannot go beyond zero
       #and second cannot come below zero
@@ -402,7 +419,9 @@ pathwayAnalysis <- function(id, srcContentReactive) {
                           value = c(sliderValues[1], 0.001))
       }
       averageValues <- reactiveAverage()
+      #cat("range slider calling display graph \n")
       displayGraph(averageValues, sliderValues[1], sliderValues[2])
+      #cat("going out of range slider\n")
     })
 
     output$fileInputUI <- renderUI({
