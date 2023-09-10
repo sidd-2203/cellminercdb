@@ -138,26 +138,6 @@ pathwayAnalysis <- function(id, srcContentReactive) {
         list(src="www/files/pathway_network2.png",
              alt="Network Notation")
       },deleteFile=FALSE)
-      
-      #-----------------------[FGSEA Start]---------------------------
-      #namedMean <- reactiveMean()
-      
-      # examplePathways <- list()
-      # examplePathways[[input$selectPathway]] <- namesOfNodes
-      # fgseaRes <- fgsea(pathways = examplePathways[1],
-      #                   stats    = averageValues,
-      #                   minSize  = 3,
-      #                   maxSize  = 500,
-      #                   nperm = 1000)
-      # print(fgseaRes)
-  
-      # output$gseaText <-renderText({
-      #   paste0("p-Value: ",round(fgseaRes$padj,5))
-      # })
-      
-      #-----------------[FGSEA End]---------------------------------------
-      
-      
       #cat("Display Graph Out\n")
     }
 
@@ -215,6 +195,33 @@ pathwayAnalysis <- function(id, srcContentReactive) {
       output$nodeDatatable <- renderDataTable({
         datatable(tableValuesDataFrame)
       })
+      
+      #-----------------------[FGSEA Start]---------------------------
+      
+      # namedMean <- setNames(tableValuesAverages,namesOfNodes)
+      # namedMean <- namedMean[!is.na(namedMean)]
+      # 
+      # print(namedMean)
+      # if(!is.null(namedMean)){
+      #  examplePathways <- list()
+      #  examplePathways[[input$selectPathway]] <- namesOfNodes
+      #  print(examplePathways[1])
+      #  fgseaRes <- fgsea(
+      #    pathways = examplePathways[1],
+      #    stats    = namedMean,
+      #    minSize  = 3,
+      #    maxSize  = 500,
+      #    nperm = 1000
+      #  )
+      #  print(fgseaRes)
+      # 
+      #  output$gseaText <- renderText({
+      #    paste0("p-Value: ", round(fgseaRes$p, 3))
+      #  })
+      # }
+      
+      #-----------------[FGSEA End]---------------------------------------
+      
       #cat("Display table Out\n")
       return(tableValuesAverages)
     }
