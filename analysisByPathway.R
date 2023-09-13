@@ -36,12 +36,10 @@ analysisByPathwayInput <- function(id,dataSourceChoices) {
                  shinyjs::hidden(selectInput(
                    ns("selectPathway"), "Select Pathway", choices = NULL
                  )),
-                 shinyjs::hidden(selectInput(
+                 selectInput(
                    ns("options"),
                    "Select Cell Line or Tissue",
-                   c("Tissue","Cell line")
-                 )),
-
+                   c("Tissue","Cell line")),
                  conditionalPanel(
                    condition = paste0("input['", ns("options"),
                                       "'] =='Cell line'"),
@@ -66,7 +64,7 @@ analysisByPathwayInput <- function(id,dataSourceChoices) {
                  width = 3,
                ),
                mainPanel(
-                 textOutput(ns("gseaText")),  
+                 htmlOutput(ns("gseaText")),  
                  cyjShinyOutput(ns("cyjShiny"), height = 800), 
                  imageOutput(ns("notationLegend"))
                  )
@@ -123,7 +121,6 @@ pathwayAnalysis <- function(id, srcContentReactive) {
         interaction = forEdges[["EdgeType"]],
         stringsAsFactors = FALSE
       )
-
       graphJson <- dataFramesToJSON(tblEdges, tblNodes)
       #write(graphJson,file="GraphData.json")
       output$cyjShiny <- renderCyjShiny({
@@ -131,13 +128,12 @@ pathwayAnalysis <- function(id, srcContentReactive) {
                  layoutName = "preset",
                  styleFile = "basicStyle.js")
       })
-
-      displayColorPlot(minVal, maxVal)
       
+      displayColorPlot(minVal, maxVal)
       output$notationLegend <- renderImage({
-        list(src="www/files/pathway_network2.png",
-             alt="Network Notation")
-      },deleteFile=FALSE)
+        list(src = "www/files/pathway_network2.png",
+             alt = "Network Notation")
+      }, deleteFile = FALSE)
       #cat("Display Graph Out\n")
     }
 
@@ -152,32 +148,42 @@ pathwayAnalysis <- function(id, srcContentReactive) {
       names <- as.list(row.names(data))
       tableValuesAverages <- NULL
       tableValuesMedians <- NULL
+      allGeneAverage <- NULL
+      allGeneMedian <- NULL
 
-      for (nodeName in namesOfNodes) {
+
+      for (nodeName in allNodeNames) {
         # Construct the name of the gene in the "xsq" data frame
         nameInData <- paste0(prefix, nodeName)
+        cellVal <- NA
+        cellMed <- NA
         if (nameInData %in% names) {
           # Calculate the average value for the gene
           cellVal <-
-            mean(as.numeric(cellLineData[nameInData, ]), na.rm = TRUE)
+            mean(as.numeric(cellLineData[nameInData,]), na.rm = TRUE)
           cellMed <-
-            median(as.numeric(cellLineData[nameInData, ], na.rm = TRUE))
-
+            median(as.numeric(cellLineData[nameInData,], na.rm = TRUE))
+          
           cellVal <- round(cellVal, 3)
           cellMed <- round(cellMed, 3)
-
-          tableValuesAverages <- c(tableValuesAverages, cellVal)
-          tableValuesMedians <- c(tableValuesMedians, cellMed)
-        } else {
-          tableValuesAverages <- c(tableValuesAverages, NA)
-          tableValuesMedians <- c(tableValuesMedians, NA)
         }
+        allGeneAverage <- c(allGeneAverage, cellVal)
+        allGeneMedian <- c(allGeneMedian, cellMed)
       }
       
+      allGeneAverage <- setNames(allGeneAverage,allNodeNames)
+      allGeneMedian <- setNames(allGeneMedian,allNodeNames)
+      # Extracting only the pathway nodes from all nodes
+      tableValuesAverages <- unname(allGeneAverage[namesOfNodes])
+      tableValuesMedians <- unname(allGeneMedian[namesOfNodes])
+    
       reactiveAverage(tableValuesAverages)
+      
       maxVal <- max(c(tableValuesAverages, 0.0001), na.rm = TRUE)
       minVal <- min(c(tableValuesAverages, -0.0001), na.rm = TRUE)
-
+      
+      stopifnot(length(namesOfNodes)==length(tableValuesAverages))  
+      
       if (length(selectedCells) > 1) {
         tableValuesDataFrame <-
           data.frame(Name = namesOfNodes,
@@ -198,28 +204,28 @@ pathwayAnalysis <- function(id, srcContentReactive) {
       
       #-----------------------[FGSEA Start]---------------------------
       
-      # namedMean <- setNames(tableValuesAverages,namesOfNodes)
-      # namedMean <- namedMean[!is.na(namedMean)]
-      # 
-      # print(namedMean)
-      # if(!is.null(namedMean)){
-      #  examplePathways <- list()
-      #  examplePathways[[input$selectPathway]] <- namesOfNodes
-      #  print(examplePathways[1])
-      #  fgseaRes <- fgsea(
-      #    pathways = examplePathways[1],
-      #    stats    = namedMean,
-      #    minSize  = 3,
-      #    maxSize  = 500,
-      #    nperm = 1000
-      #  )
-      #  print(fgseaRes)
-      # 
-      #  output$gseaText <- renderText({
-      #    paste0("p-Value: ", round(fgseaRes$p, 3))
-      #  })
-      # }
-      
+      allGeneAverage <- allGeneAverage[!is.na(allGeneAverage)]
+      if(!is.null(allGeneAverage)) {
+        examplePathways <- list()
+        examplePathways[[input$selectPathway]] <- namesOfNodes
+        #It might look awkward but this actually works 
+        if (examplePathways[1]!="NULL") {
+          fgseaRes <- fgsea(
+            pathways = examplePathways[1],
+            stats    = allGeneAverage,
+            minSize  = 3,
+            maxSize  = 500,
+            nperm = 1000
+          )
+          output$gseaText <- renderUI({
+            str1 <- paste("<h1>", fgseaRes$pathway, "</h1>")
+            str2 <- paste("p-Value: ", round(fgseaRes$pval, 3))
+            str3 <-
+              paste("Normalize Enrichment Score: ", round(fgseaRes$NES, 3))
+            HTML(paste(str1, str2, str3, sep = '<br/>'))
+          })
+        }
+      }
       #-----------------[FGSEA End]---------------------------------------
       
       #cat("Display table Out\n")
@@ -333,7 +339,7 @@ pathwayAnalysis <- function(id, srcContentReactive) {
     observeEvent(input$selectPathway, {
       #cat("Inside Select Pathway\n")
       if (input$selectPathway != "") {
-        shinyjs::showElement("options")
+        #shinyjs::showElement("options")
         pathwaysList <- reactiveDfList()
         namesOfNodes <- pathwaysList[[input$selectPathway]][[1]][["NodeName"]]
         updateSelectInput(session, "selectPathway",
@@ -341,24 +347,24 @@ pathwayAnalysis <- function(id, srcContentReactive) {
         updateSelectInput(session, "selectNode",
                           choices = c("", namesOfNodes))
         
-        if(!is.null(input$selectCellLine) && input$selectCellLine!="")
-        {
-          cellLine <- input$selectCellLine
-          updateSelectizeInput(session,"selectCellLine",selected="")
-          updateSelectizeInput(session,"selectCellLine",selected=cellLine)
-        }
         if(!is.null(input$selectTissue) && input$selectTissue!="")
         {
           tissue <- input$selectTissue
           updateSelectizeInput(session,"selectTissue",selected="")
           updateSelectizeInput(session,"selectTissue",selected=tissue)
         }
+        else if(!is.null(input$selectCellLine) && input$selectCellLine!="")
+        {
+          cellLine <- input$selectCellLine
+          updateSelectizeInput(session,"selectCellLine",selected="")
+          updateSelectizeInput(session,"selectCellLine",selected=cellLine)
+        }
         
       }
       #cat("Going out of Select Pathway\n")
     })
     
-    observeEvent(input$options,{
+    observeEvent(input$options,ignoreInit = TRUE,ignoreNULL = TRUE,{
       if(input$options == "Cell line"){
         if(!is.null(input$selectCellLine) && input$selectCellLine!="")
         {
@@ -382,6 +388,7 @@ pathwayAnalysis <- function(id, srcContentReactive) {
       if (input$selectPathway != "" && !is.null(input$selectPathway) &&
           input$selectCellLine != "") {
         selectedCellLine <- input$selectCellLine
+        cat("Cell line calling Display table\n")
         averages <- displayTable(selectedCellLine)
         maxVal <- max(c(averages, 0.0001), na.rm = TRUE)
         minVal <- min(c(averages, -0.0001), na.rm = TRUE)
@@ -401,7 +408,6 @@ pathwayAnalysis <- function(id, srcContentReactive) {
 
         selectedCellLines <-
           unlist(selectedCellLines, use.names = FALSE)
-
         averages <- displayTable(selectedCellLines)
         maxVal <- max(c(averages, 0.0001), na.rm = TRUE)
         minVal <- min(c(averages, -0.0001), na.rm = TRUE)
@@ -523,7 +529,7 @@ pathwayAnalysis <- function(id, srcContentReactive) {
               selected = nameOfPathway
             )
 
-            shinyjs::showElement("options")
+            #shinyjs::showElement("options")
 
           }
         }
